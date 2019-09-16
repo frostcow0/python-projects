@@ -13,7 +13,7 @@ except ImportError:
 #Creates the Window
 root=Tk()
 #To Manually Size the Window
-root.geometry('300x200')
+##root.geometry('300x200')
 #Title at the top of the Window
 root.title("Python RPG")
 
@@ -51,7 +51,14 @@ class Presser(Frame):#Button Constructor
                                  height=1)
         self.right_button.grid(row=1,
                                column=1)
-                                
+
+        self.status=Text(self, #Output Box
+                         wrap=WORD,
+                         height=3,
+                         width=20)
+        self.status.grid(row=0,
+                         column=2,
+                         rowspan=2)
 
 ##zone_one={
 ##        'items':['computer','tablet','heiroglyphics','king tut'],
