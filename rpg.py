@@ -86,11 +86,6 @@ class Presser(Frame):#Button Constructor
                                   width=20,
                                   height=1,
                                   command=self.place_subaction_widgets)
-        self.action_button.grid(row=2,
-                                column=2,
-                                columnspan=2,
-                                padx=2,
-                                pady=2)
 
         self.search_items=Button(self,
                                  text="Search4Items",
@@ -104,7 +99,16 @@ class Presser(Frame):#Button Constructor
                                 text="Back",
                                 width=5,
                                 height=1,
-                                command=self.create_action_widgets)
+                                command=self.place_action_widgets)
+        
+        self.place_action_widgets()
+
+    def place_action_widgets(self):
+        self.action_button.grid(row=2,
+                                column=2,
+                                columnspan=2,
+                                padx=2,
+                                pady=2)
 
         self.search_items.grid_remove()
         self.pickup_item.grid_remove()
