@@ -1,5 +1,11 @@
 """
-    This is hopefully going to be a very simple RPG.
+    Ideas:
+        -ASCII Map on a separate .txt file which will be referenced for
+            displaying a mini-map
+
+        -The ASCII Map is going to have to be upside down so that y will
+            increase as you move up instead of decrease.
+    
     By Jon Martin
 """
 
@@ -25,6 +31,11 @@ class Presser(Frame):#Button Constructor
         self.place_default_widgets()
         self.place_action_widgets()
 
+        self.x_location=20
+        self.y_location=20
+
+        self.inventory=['dog', 'cat']
+
     def create_widgets(self):
 
         ##Default Widgets ---------------------------------------------------
@@ -32,27 +43,32 @@ class Presser(Frame):#Button Constructor
         self.up_button=Button(self, #Up Button
                               text="Up",
                               width=5,
-                              height=1)
+                              height=1,
+                              command=self.up)
         
         self.down_button=Button(self, #Down Button
                                 text="Down",
                                 width=5,
-                                height=1)
+                                height=1,
+                                command=self.down)
         
         self.left_button=Button(self, #Left Button
                                 text="Left",
                                 width=5,
-                                height=1)
+                                height=1,
+                                command=self.left)
         
         self.right_button=Button(self, #Right Button
                                  text="Right",
                                  width=5,
-                                 height=1)
+                                 height=1,
+                                 command=self.right)
         
         self.inventory_button=Button(self, #Inventory Button
                                      text="Inv.",
                                      width=5,
-                                     height=1)
+                                     height=1,
+                                     command=self.inv)
 
         self.output=Text(self, #Output Box
                          wrap=WORD,
@@ -146,6 +162,26 @@ class Presser(Frame):#Button Constructor
         
         self.action_button.grid_remove() #Removes the Action Button from the Grid
 
+
+    def up(self): #Moves the Player UP by 1 & Prints New Location
+        self.y_location+=1
+        self.output.insert(0.0,">> "+str(self.x_location)+", "+str(self.y_location)+"\n")
+
+    def down(self): #Moves the Player DOWN by 1 & Prints New Location
+        self.y_location-=1
+        self.output.insert(0.0,">> "+str(self.x_location)+", "+str(self.y_location)+"\n")
+
+    def left(self): #Moves the Player LEFT by 1 & Prints New Location
+        self.x_location+=1
+        self.output.insert(0.0,">> "+str(self.x_location)+", "+str(self.y_location)+"\n")
+
+    def right(self): #Moves the Player RIGHT by 1 & Prints New Location
+        self.x_location-=1
+        self.output.insert(0.0,">> "+str(self.x_location)+", "+str(self.y_location)+"\n")
+
+    def inv(self): #Prints the Player's Current Inventory
+        self.output.insert(0.0,">> "+str(self.inventory)+"\n")
+        
 
 ##zone_one={
 ##        'items':['computer','tablet','heiroglyphics','king tut'],
