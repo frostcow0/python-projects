@@ -22,117 +22,129 @@ class Presser(Frame):#Button Constructor
         Frame.__init__(self,master)
         self.grid()
         self.create_widgets()
-        self.create_action_widgets()
+        self.place_default_widgets()
+        self.place_action_widgets()
 
     def create_widgets(self):
+
+        ##Default Widgets ---------------------------------------------------
+        
         self.up_button=Button(self, #Up Button
                               text="Up",
                               width=5,
                               height=1)
-        self.up_button.grid(row=0,
-                            column=0,
-                            padx=2,
-                            pady=2)
-
+        
         self.down_button=Button(self, #Down Button
                                 text="Down",
                                 width=5,
                                 height=1)
-        self.down_button.grid(row=0,
-                              column=1,
-                              padx=2,
-                              pady=2)
-
+        
         self.left_button=Button(self, #Left Button
                                 text="Left",
                                 width=5,
                                 height=1)
-        self.left_button.grid(row=1,
-                              column=0,
-                              padx=2,
-                              pady=2)
-
+        
         self.right_button=Button(self, #Right Button
                                  text="Right",
                                  width=5,
                                  height=1)
-        self.right_button.grid(row=1,
-                               column=1,
-                               padx=2,
-                               pady=2)
-
-        self.status=Text(self, #Output Box
-                         wrap=WORD,
-                         height=3,
-                         width=20)
-        self.status.grid(row=0,
-                         column=2,
-                         rowspan=2,
-                         padx=2,
-                         pady=2)
-
-        self.inventory_button=Button(self,
+        
+        self.inventory_button=Button(self, #Inventory Button
                                      text="Inv.",
                                      width=5,
                                      height=1)
-        self.inventory_button.grid(row=2,
-                                   column=0,
-                                   padx=2,
-                                   pady=2)
 
-    def create_action_widgets(self):
-        self.action_button=Button(self,
+        self.output=Text(self, #Output Box
+                         wrap=WORD,
+                         height=3,
+                         width=20)
+
+        ##Action Widgets ---------------------------------------------------
+
+        self.action_button=Button(self, #Actions Button
                                   text="Actions",
                                   width=20,
                                   height=1,
                                   command=self.place_subaction_widgets)
 
-        self.search_items=Button(self,
+        self.search_items=Button(self, #Search4Items Button
                                  text="Search4Items",
                                  width=10,
                                  height=1)
-        self.pickup_item=Button(self,
+        
+        self.pickup_item=Button(self, #Pickup Item Button
                                 text="PickupItem",
                                 width=10,
                                 height=1)
-        self.back_button=Button(self,
+        
+        self.back_button=Button(self, #Back Button
                                 text="Back",
                                 width=5,
                                 height=1,
                                 command=self.place_action_widgets)
         
-        self.place_action_widgets()
+    def place_default_widgets(self):
+        self.up_button.grid(row=0, #Places the Up Button on the Grid
+                            column=0,
+                            padx=2,
+                            pady=2)
+        
+        self.down_button.grid(row=0, #Places the Down Button on the Grid
+                              column=1,
+                              padx=2,
+                              pady=2)
+        
+        self.left_button.grid(row=1, #Places the Left Button on the Grid
+                              column=0,
+                              padx=2,
+                              pady=2)
+        
+        self.right_button.grid(row=1, #Places the Right Button on the Grid
+                               column=1,
+                               padx=2,
+                               pady=2)
+        
+        self.inventory_button.grid(row=2, #Places the Inv. Button on the Grid
+                                   column=0,
+                                   padx=2,
+                                   pady=2)
+        
+        self.output.grid(row=0, #Places the Output Box on the Grid
+                         column=2,
+                         rowspan=2,
+                         padx=2,
+                         pady=2)
 
     def place_action_widgets(self):
-        self.action_button.grid(row=2,
+        self.action_button.grid(row=2, #Places the Action Button on the Grid
                                 column=2,
                                 columnspan=2,
                                 padx=2,
                                 pady=2)
 
-        self.search_items.grid_remove()
+        self.search_items.grid_remove() #These remove the Search4Items, Pickup Item, and Back Buttons
         self.pickup_item.grid_remove()
         self.back_button.grid_remove()
             
     def place_subaction_widgets(self):
-        self.search_items.grid(row=2,
+        self.search_items.grid(row=2, #Places the Search4Items Button on the Grid
                                column=2,
                                padx=2,
                                pady=2,
                                sticky=W)
 
-        self.pickup_item.grid(row=2,
+        self.pickup_item.grid(row=2, #Places the Pickup Item Button on the Grid
                               column=2,
                               padx=2,
                               pady=2,
                               sticky=E)
 
-        self.back_button.grid(row=2,
+        self.back_button.grid(row=2, #Places the Back Button on the Grid
                               column=1,
                               padx=2,
                               pady=2)
         
-        self.action_button.grid_remove()
+        self.action_button.grid_remove() #Removes the Action Button from the Grid
 
 
 ##zone_one={
@@ -155,9 +167,3 @@ class Presser(Frame):#Button Constructor
 
 app=Presser(root)
 root.mainloop()
-
-"""
-dog=input()
-
-print(dog)
-"""
