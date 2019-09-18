@@ -200,9 +200,9 @@ class Presser(Frame):#Button Constructor
     def read_map_file(self): #Sorts the ascii-map into an Array
         with open("ascii-map.txt") as f:
             message=f.readlines()
-            for x in message:
-                if X in message[x]:
-                    self.current_row=x
+            for k in message:
+                if X in message[k]:
+                    self.current_row=k
             print(message[self.current_row])
         
 
