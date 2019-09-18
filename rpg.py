@@ -75,7 +75,8 @@ class Presser(Frame):#Button Constructor
 
         self.output=Text(self, #Output Box
                          wrap=WORD,
-                         height=3,
+                         state=DISABLED,
+                         height=6,
                          width=20)
 
         self.map=Button(self, #Temporary Map Print Button
@@ -136,66 +137,74 @@ class Presser(Frame):#Button Constructor
         
         self.output.grid(row=0, #Places the Output Box on the Grid
                          column=2,
-                         rowspan=2,
+                         rowspan=3,
                          padx=2,
                          pady=2)
 
+        self.map.grid(row=3, #Places the Map Button on the Grid
+                      column=0,
+                      padx=2,
+                      pady=2)
+
     def place_action_widgets(self):
-        self.action_button.grid(row=2, #Places the Action Button on the Grid
+        self.action_button.grid(row=3, #Places the Action Button on the Grid
                                 column=2,
                                 columnspan=2,
                                 padx=2,
                                 pady=2)
-        
-        self.map.grid(row=2, #Places the Map Button on the Grid
-                      column=1,
-                      padx=2,
-                      pady=2)
 
         self.search_items.grid_remove() #These remove the Search4Items, Pickup Item, and Back Buttons
         self.pickup_item.grid_remove()
         self.back_button.grid_remove()
             
     def place_subaction_widgets(self):
-        self.search_items.grid(row=2, #Places the Search4Items Button on the Grid
+        self.search_items.grid(row=3, #Places the Search4Items Button on the Grid
                                column=2,
                                padx=2,
                                pady=2,
                                sticky=W)
 
-        self.pickup_item.grid(row=2, #Places the Pickup Item Button on the Grid
+        self.pickup_item.grid(row=3, #Places the Pickup Item Button on the Grid
                               column=2,
                               padx=2,
                               pady=2,
                               sticky=E)
 
-        self.back_button.grid(row=2, #Places the Back Button on the Grid
+        self.back_button.grid(row=3, #Places the Back Button on the Grid
                               column=1,
                               padx=2,
                               pady=2)
         
         self.action_button.grid_remove() #Removes the Action Button from the Grid
-        self.map.grid_remove() #Removes the Map Button from the Grid
-
 
     def up(self): #Moves the Player UP by 1 & Prints New Location
         self.y_location+=1
+        self.output.config(state=NORMAL)
         self.output.insert(0.0,">> "+str(self.x_location)+", "+str(self.y_location)+"\n")
-
+        self.output.config(state=DISABLED)
+        
     def down(self): #Moves the Player DOWN by 1 & Prints New Location
         self.y_location-=1
+        self.output.config(state=NORMAL)
         self.output.insert(0.0,">> "+str(self.x_location)+", "+str(self.y_location)+"\n")
+        self.output.config(state=DISABLED)
 
     def left(self): #Moves the Player LEFT by 1 & Prints New Location
         self.x_location+=1
+        self.output.config(state=NORMAL)
         self.output.insert(0.0,">> "+str(self.x_location)+", "+str(self.y_location)+"\n")
+        self.output.config(state=DISABLED)
 
     def right(self): #Moves the Player RIGHT by 1 & Prints New Location
         self.x_location-=1
+        self.output.config(state=NORMAL)
         self.output.insert(0.0,">> "+str(self.x_location)+", "+str(self.y_location)+"\n")
+        self.output.config(state=DISABLED)
 
     def inv(self): #Prints the Player's Current Inventory
+        self.output.config(state=NORMAL)
         self.output.insert(0.0,">> "+str(self.inventory)+"\n")
+        self.output.config(state=DISABLED)
 
     def read_map_file(self): #Sorts the ascii-map into an Array
         with open("ascii-map.txt") as f:
