@@ -7,6 +7,7 @@
             increase as you move up instead of decrease.
     
     By Jon Martin
+    Co-Authored by Michael Pritchard
 """
 
 try:
@@ -31,8 +32,10 @@ class Presser(Frame):#Button Constructor
         self.place_default_widgets()
         self.place_action_widgets()
 
-        self.x_location=20
-        self.y_location=20
+        self.x_location=16
+        self.y_location=16
+
+        self.current_row=0
 
         self.inventory=['dog', 'cat']
 
@@ -74,6 +77,12 @@ class Presser(Frame):#Button Constructor
                          wrap=WORD,
                          height=3,
                          width=20)
+
+        self.map=Button(self, #Temporary Map Print Button
+                        text="Map",
+                        width=5,
+                        height=1,
+                        command=self.read_map_file)
 
         ##Action Widgets ---------------------------------------------------
 
@@ -137,6 +146,11 @@ class Presser(Frame):#Button Constructor
                                 columnspan=2,
                                 padx=2,
                                 pady=2)
+        
+        self.map.grid(row=2, #Places the Map Button on the Grid
+                      column=1,
+                      padx=2,
+                      pady=2)
 
         self.search_items.grid_remove() #These remove the Search4Items, Pickup Item, and Back Buttons
         self.pickup_item.grid_remove()
@@ -161,6 +175,7 @@ class Presser(Frame):#Button Constructor
                               pady=2)
         
         self.action_button.grid_remove() #Removes the Action Button from the Grid
+        self.map.grid_remove() #Removes the Map Button from the Grid
 
 
     def up(self): #Moves the Player UP by 1 & Prints New Location
@@ -181,6 +196,14 @@ class Presser(Frame):#Button Constructor
 
     def inv(self): #Prints the Player's Current Inventory
         self.output.insert(0.0,">> "+str(self.inventory)+"\n")
+
+    def read_map_file(self): #Sorts the ascii-map into an Array
+        with open("ascii-map.txt") as f:
+            message=f.readlines()
+            for x in message:
+                if X in message[x]:
+                    self.current_row=x
+            print(message[self.current_row])
         
 
 ##zone_one={
