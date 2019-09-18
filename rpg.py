@@ -31,6 +31,7 @@ class Presser(Frame):#Button Constructor
         self.create_widgets()
         self.place_default_widgets()
         self.place_action_widgets()
+        self.read_map_file()
 
         self.x_location=16
         self.y_location=16
@@ -84,6 +85,12 @@ class Presser(Frame):#Button Constructor
                         width=5,
                         height=1,
                         command=self.read_map_file)
+
+        self.map_box=Text(self, #Testing a Box specifically for the Map
+                          wrap=NONE,
+                          state=DISABLED,
+                          height=16,
+                          width=33)
 
         ##Action Widgets ---------------------------------------------------
 
@@ -146,6 +153,13 @@ class Presser(Frame):#Button Constructor
                       padx=2,
                       pady=2)
 
+        self.map_box.grid(row=4, #Testing a Box specifically for the Map
+                          column=0,
+                          columnspan=3,
+                          rowspan=3,
+                          padx=2,
+                          pady=2)
+
     def place_action_widgets(self):
         self.action_button.grid(row=3, #Places the Action Button on the Grid
                                 column=2,
@@ -207,13 +221,17 @@ class Presser(Frame):#Button Constructor
         self.output.config(state=DISABLED)
 
     def read_map_file(self): #Sorts the ascii-map into an Array
-        with open("ascii-map.txt") as f:
-            message=f.readlines()
-            for k in message:
-                if X in message[k]:
-                    self.current_row=k
-            print(message[self.current_row])
-        
+        with open("ascii-map.txt") as f: #Can only do Read OR Readlines. The Second will show up blank.
+            trial=f.read()
+            #message=f.readlines()
+##            for k in message:
+##                if X in message[k]:
+##                    self.current_row=k
+##            print(message[self.current_row])
+            self.map_box.config(state=NORMAL)
+            self.map_box.insert(0.0,trial)
+            self.map_box.config(state=DISABLED)
+
 
 ##zone_one={
 ##        'items':['computer','tablet','heiroglyphics','king tut'],
