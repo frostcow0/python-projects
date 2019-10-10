@@ -27,18 +27,21 @@ root.title("Python RPG")
 class Presser(Frame):#Button Constructor
     def __init__(self,master):
         Frame.__init__(self,master)
-        self.grid()
-        self.create_widgets()
-        self.place_default_widgets()
-        self.place_action_widgets()
-        self.read_map_file()
 
         self.x_location=16
         self.y_location=16
 
         self.current_row=0
 
+        self.char_key=X
+
         self.inventory=['dog', 'cat']
+
+        self.grid()
+        self.create_widgets()
+        self.place_default_widgets()
+        self.place_action_widgets()
+        self.read_map_file()
 
     def create_widgets(self):
 
@@ -222,15 +225,16 @@ class Presser(Frame):#Button Constructor
 
     def read_map_file(self): #Sorts the ascii-map into an Array
         with open("ascii-map.txt") as f: #Can only do Read OR Readlines. The Second will show up blank.
-            trial=f.read()
-            #message=f.readlines()
-##            for k in message:
-##                if X in message[k]:
-##                    self.current_row=k
-##            print(message[self.current_row])
-            self.map_box.config(state=NORMAL)
-            self.map_box.insert(0.0,trial)
-            self.map_box.config(state=DISABLED)
+            ##trial=f.read()
+            message=f.readlines()
+            for k in message:
+                if self.char_key in message[2]:
+                    self.current_row=k##TRY str.find(X,0,16)
+            print(message[self.current_row])
+            print(message[2])
+            ##self.map_box.config(state=NORMAL)
+            ##self.map_box.insert(0.0,trial)
+            ##self.map_box.config(state=DISABLED)
 
 
 ##zone_one={
