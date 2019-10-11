@@ -31,15 +31,20 @@ class Presser(Frame):#Button Constructor
         self.current_row=0
         self.current_column=0
 
-        self.char_key=X
-
         self.inventory=['dog', 'cat']
+
+        self.empty_row='|_|_|_|_|_|_|_|_|_|_|_|_|_|_|_|_|\n'
+        self.char_key='X'
+        self.wall_key='|'
+        self.blank_key='_'
 
         self.grid()
         self.create_widgets()
         self.place_default_widgets()
         self.place_action_widgets()
         self.read_map_file()
+
+        previous_map=list()
 
     def create_widgets(self):
 
@@ -81,13 +86,13 @@ class Presser(Frame):#Button Constructor
                          height=6,
                          width=20)
 
-        self.map=Button(self, #Temporary Map Print Button
+        self.map=Button(self, #Currently Obsolete
                         text="Map",
                         width=5,
                         height=1,
                         command=self.read_map_file)
 
-        self.map_box=Text(self, #Testing a Box specifically for the Map
+        self.map_box=Text(self, #Where the map is printed to
                           wrap=NONE,
                           state=DISABLED,
                           height=16,
@@ -193,54 +198,114 @@ class Presser(Frame):#Button Constructor
         self.action_button.grid_remove() #Removes the Action Button from the Grid
 
     def up(self): #Moves the Player UP by 1 & Prints New Location
-        ##self.y_location+=1
-        self.current_row+=1
-        self.output.config(state=NORMAL)
-        self.output.insert(0.0,">> "+str(self.current_column)+", "+str(self.current_row)+"\n")
-        self.output.config(state=DISABLED)
+        #self.current_row+=1
+        self.map_update(1)
         
     def down(self): #Moves the Player DOWN by 1 & Prints New Location
-        ##self.y_location-=1
-        self.current_row-=1
-        self.output.config(state=NORMAL)
-        self.output.insert(0.0,">> "+str(self.current_column)+", "+str(self.current_row)+"\n")
-        self.output.config(state=DISABLED)
+        #self.current_row-=1
+        self.map_update(2)
 
     def left(self): #Moves the Player LEFT by 1 & Prints New Location
-        ##self.x_location+=1
-        self.current_column-=1
-        self.output.config(state=NORMAL)
-        self.output.insert(0.0,">> "+str(self.current_column)+", "+str(self.current_row)+"\n")
-        self.output.config(state=DISABLED)
+        #self.current_column-=1
+        self.map_update(3)
 
     def right(self): #Moves the Player RIGHT by 1 & Prints New Location
-        ##self.x_location-=1
-        self.current_column+=1
-        self.output.config(state=NORMAL)
-        self.output.insert(0.0,">> "+str(self.current_column)+", "+str(self.current_row)+"\n")
-        self.output.config(state=DISABLED)
+        #self.current_column+=1
+        self.map_update(4)
 
     def inv(self): #Prints the Player's Current Inventory
         self.output.config(state=NORMAL)
-        self.output.insert(0.0,">> "+str(self.inventory)+"\n")
-        self.output.config(state=DISABLED)
+        print(self.previous_map[self.current_row-1][self.current_column-1])
 
     def read_map_file(self): #Sorts the ascii-map into an Array
-        with open("ascii-map.txt") as f: #Can only do Read OR Readlines. The Second will show up blank.
+        with open("ascii-map-test.txt") as f: #Can only do Read OR Readlines. The Second will show up blank.
             message=f.readlines()
-            message.reverse() #Otherwise the map would be upside-down
+            #message.reverse() #Otherwise the map would be upside-down
             row_counter=0
+
+            self.previous_map=message
             
             for k in message: #k == the row's text
                 row_counter+=1
-                if k.find('X')!=(-1): #Finds the location of the X in the map
+                print("Pre: ",row_counter)
+                if k.find(self.char_key)!=(-1): #Finds the location of the X in the map
+                    print("Post: ",row_counter)
                     self.current_row=row_counter
-                    self.current_column=(k.find('X')+1)
+                    self.current_column=(k.find(self.char_key)+1)
             
             self.map_box.config(state=NORMAL)#Outputs the map to the Map_Box
             for k in message:
                 self.map_box.insert(0.0,k)
             self.map_box.config(state=DISABLED)
+
+            print('------------------------')
+            print('------------------------')
+            print('------------------------++')
+
+            self.output.config(state=NORMAL) #Outputs X,Y to the Output
+            self.output.insert(0.0,">> "+str(int(self.current_column/2))+", "+str(self.current_row)+"\n")
+            self.output.config(state=DISABLED)
+
+    def map_update(self,num): #Updates the Map_Box and X,Y locations in the Output
+        direction=0
+
+        if num==1: #Up
+            self.current_row+=1
+            direction=(-1)
+        if num==2: #Down
+            self.current_row-=1
+            direction=1
+        if num==3: #Left
+            self.current_column-=2
+            direction=0
+        if num==4: #Right
+            self.current_column+=2
+            direction=0
+        
+        with open("ascii-map-test.txt","w") as f:
+            new_map=''
+            
+            for k in range(16):
+                if k==(self.current_row+direction): #Finds the new row
+                    print('------------------------')
+                    print('Current Row:',self.current_row)
+                    print('Direction:',direction)
+                    print('------------------------')
+                    new_map+=self.row_generator(1) #Adds row with Character
+                else: new_map+=self.row_generator(0) #Adds empty row
+            f.write(new_map)
+
+        with open("ascii-map-test.txt") as f:
+            message=f.readlines()
+            
+            self.map_box.config(state=NORMAL) #Outputs the map to the Map_Box
+            self.map_box.delete('1.0',END)
+            for k in message:
+                self.map_box.insert(0.0,k)
+            self.map_box.config(state=DISABLED)
+
+            self.output.config(state=NORMAL) #Outputs X,Y to the Output
+            self.output.insert(0.0,">> "+str(int(self.current_column/2))+", "+str(self.current_row)+"\n")
+            self.output.config(state=DISABLED)
+
+    def row_generator(self,num): #Builds the new row or provides the empty one
+        working_row=''
+        
+        if num==1:
+            for working_column in range(1,34):
+                if working_column==self.current_column:
+                    working_row+=self.char_key
+                else:
+                    if working_column%2:
+                        working_row+=self.wall_key
+                    else:
+                        working_row+=self.blank_key
+            working_row+='\n'
+            print('Row Generator Current Row:',self.current_row)
+            print('------------------------')
+            return working_row
+        else: return self.empty_row
+
 
 
 ##zone_one={
