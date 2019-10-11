@@ -28,10 +28,8 @@ class Presser(Frame):#Button Constructor
     def __init__(self,master):
         Frame.__init__(self,master)
 
-        self.x_location=16
-        self.y_location=16
-
         self.current_row=0
+        self.current_column=0
 
         self.char_key=X
 
@@ -195,27 +193,31 @@ class Presser(Frame):#Button Constructor
         self.action_button.grid_remove() #Removes the Action Button from the Grid
 
     def up(self): #Moves the Player UP by 1 & Prints New Location
-        self.y_location+=1
+        ##self.y_location+=1
+        self.current_row+=1
         self.output.config(state=NORMAL)
-        self.output.insert(0.0,">> "+str(self.x_location)+", "+str(self.y_location)+"\n")
+        self.output.insert(0.0,">> "+str(self.current_column)+", "+str(self.current_row)+"\n")
         self.output.config(state=DISABLED)
         
     def down(self): #Moves the Player DOWN by 1 & Prints New Location
-        self.y_location-=1
+        ##self.y_location-=1
+        self.current_row-=1
         self.output.config(state=NORMAL)
-        self.output.insert(0.0,">> "+str(self.x_location)+", "+str(self.y_location)+"\n")
+        self.output.insert(0.0,">> "+str(self.current_column)+", "+str(self.current_row)+"\n")
         self.output.config(state=DISABLED)
 
     def left(self): #Moves the Player LEFT by 1 & Prints New Location
-        self.x_location+=1
+        ##self.x_location+=1
+        self.current_column-=1
         self.output.config(state=NORMAL)
-        self.output.insert(0.0,">> "+str(self.x_location)+", "+str(self.y_location)+"\n")
+        self.output.insert(0.0,">> "+str(self.current_column)+", "+str(self.current_row)+"\n")
         self.output.config(state=DISABLED)
 
     def right(self): #Moves the Player RIGHT by 1 & Prints New Location
-        self.x_location-=1
+        ##self.x_location-=1
+        self.current_column+=1
         self.output.config(state=NORMAL)
-        self.output.insert(0.0,">> "+str(self.x_location)+", "+str(self.y_location)+"\n")
+        self.output.insert(0.0,">> "+str(self.current_column)+", "+str(self.current_row)+"\n")
         self.output.config(state=DISABLED)
 
     def inv(self): #Prints the Player's Current Inventory
@@ -225,16 +227,20 @@ class Presser(Frame):#Button Constructor
 
     def read_map_file(self): #Sorts the ascii-map into an Array
         with open("ascii-map.txt") as f: #Can only do Read OR Readlines. The Second will show up blank.
-            ##trial=f.read()
             message=f.readlines()
+            message.reverse() #Otherwise the map would be upside-down
+            row_counter=0
+            
+            for k in message: #k == the row's text
+                row_counter+=1
+                if k.find('X')!=(-1): #Finds the location of the X in the map
+                    self.current_row=row_counter
+                    self.current_column=(k.find('X')+1)
+            
+            self.map_box.config(state=NORMAL)#Outputs the map to the Map_Box
             for k in message:
-                if self.char_key in message[2]:
-                    self.current_row=k##TRY str.find(X,0,16)
-            print(message[self.current_row])
-            print(message[2])
-            ##self.map_box.config(state=NORMAL)
-            ##self.map_box.insert(0.0,trial)
-            ##self.map_box.config(state=DISABLED)
+                self.map_box.insert(0.0,k)
+            self.map_box.config(state=DISABLED)
 
 
 ##zone_one={
