@@ -42,6 +42,7 @@ class Presser(Frame):#Button Constructor
         self.place_default_widgets()
         self.place_action_widgets()
         self.read_map_file()
+        self.map_update(0)
 
         previous_map=list()
 
@@ -247,17 +248,20 @@ class Presser(Frame):#Button Constructor
     def map_update(self,num): #Updates the Map_Box and X,Y locations in the Output
         direction=0
 
-        if num==1: #Up
-            self.current_row+=1
+
+        if num==55:
             direction=(-1)
-        if num==2: #Down
-            self.current_row-=1
+        if num==1: #Up
+            #self.current_row+=1
             direction=1
+        if num==2: #Down
+            #self.current_row-=1
+            direction=(-1)
         if num==3: #Left
-            self.current_column-=2
+            #self.current_column-=2
             direction=0
         if num==4: #Right
-            self.current_column+=2
+            #self.current_column+=2
             direction=0
             
         print("----------------PRESSED BUTTON ",num)
@@ -268,13 +272,14 @@ class Presser(Frame):#Button Constructor
 
             new_row=self.current_row+direction
             print('New Row:',new_row)
-            print('------------------------')
+            print(' - Old Row:',self.current_row)
+            print(' - Direction:',direction)
             
             for k in range(16):
                 if k==new_row: #Finds the new row
-                    print('Current Row:',self.current_row)
-                    print('Direction:',direction)
+                    print(' - K:',k)
                     print('------------------------')
+
                     new_map+=self.row_generator(1) #Adds row with Character
                 else: new_map+=self.row_generator(0) #Adds empty row
             f.write(new_map)
@@ -294,6 +299,7 @@ class Presser(Frame):#Button Constructor
 ##            self.output.config(state=DISABLED)
 
         self.last_direction=direction
+        self.current_row=new_row
 
     def row_generator(self,num): #Builds the new row or provides the empty one
         working_row=''
@@ -308,8 +314,6 @@ class Presser(Frame):#Button Constructor
                     else:
                         working_row+=self.blank_key
             working_row+='\n'
-            print('Row Generator Current Row:',self.current_row)
-            print('------------------------')
             return working_row
         else: return self.empty_row
 
