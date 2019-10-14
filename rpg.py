@@ -2,9 +2,6 @@
     Ideas:
         -ASCII Map on a separate .txt file which will be referenced for
             displaying a mini-map
-
-        -The ASCII Map is going to have to be upside down so that y will
-            increase as you move up instead of decrease.
     
     By Jon Martin
     Co-Authored by Michael Pritchard
@@ -30,6 +27,8 @@ class Presser(Frame):#Button Constructor
 
         self.current_row=0
         self.current_column=0
+
+        self.last_direction=0
 
         self.inventory=['dog', 'cat']
 
@@ -227,9 +226,7 @@ class Presser(Frame):#Button Constructor
             
             for k in message: #k == the row's text
                 row_counter+=1
-                print("Pre: ",row_counter)
                 if k.find(self.char_key)!=(-1): #Finds the location of the X in the map
-                    print("Post: ",row_counter)
                     self.current_row=row_counter
                     self.current_column=(k.find(self.char_key)+1)
             
@@ -238,9 +235,10 @@ class Presser(Frame):#Button Constructor
                 self.map_box.insert(0.0,k)
             self.map_box.config(state=DISABLED)
 
+            print('Column:',str(int(self.current_column/2)))
+            print('Row:',self.current_row)
+            print('Last Direction:',self.last_direction)
             print('------------------------')
-            print('------------------------')
-            print('------------------------++')
 
             self.output.config(state=NORMAL) #Outputs X,Y to the Output
             self.output.insert(0.0,">> "+str(int(self.current_column/2))+", "+str(self.current_row)+"\n")
@@ -261,13 +259,13 @@ class Presser(Frame):#Button Constructor
         if num==4: #Right
             self.current_column+=2
             direction=0
-        
+        print("----------------PRESSED BUTTON ",num)
+        print('------------------------')
         with open("ascii-map-test.txt","w") as f:
             new_map=''
             
             for k in range(16):
                 if k==(self.current_row+direction): #Finds the new row
-                    print('------------------------')
                     print('Current Row:',self.current_row)
                     print('Direction:',direction)
                     print('------------------------')
@@ -275,18 +273,21 @@ class Presser(Frame):#Button Constructor
                 else: new_map+=self.row_generator(0) #Adds empty row
             f.write(new_map)
 
-        with open("ascii-map-test.txt") as f:
-            message=f.readlines()
-            
-            self.map_box.config(state=NORMAL) #Outputs the map to the Map_Box
-            self.map_box.delete('1.0',END)
-            for k in message:
-                self.map_box.insert(0.0,k)
-            self.map_box.config(state=DISABLED)
+        self.read_map_file()
+##        with open("ascii-map-test.txt") as f:
+##            message=f.readlines()
+##            
+##            self.map_box.config(state=NORMAL) #Outputs the map to the Map_Box
+##            self.map_box.delete('1.0',END)
+##            for k in message:
+##                self.map_box.insert(0.0,k)
+##            self.map_box.config(state=DISABLED)
+##
+##            self.output.config(state=NORMAL) #Outputs X,Y to the Output
+##            self.output.insert(0.0,">> "+str(int(self.current_column/2))+", "+str(self.current_row)+"\n")
+##            self.output.config(state=DISABLED)
 
-            self.output.config(state=NORMAL) #Outputs X,Y to the Output
-            self.output.insert(0.0,">> "+str(int(self.current_column/2))+", "+str(self.current_row)+"\n")
-            self.output.config(state=DISABLED)
+        self.last_direction=direction
 
     def row_generator(self,num): #Builds the new row or provides the empty one
         working_row=''
