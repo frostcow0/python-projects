@@ -259,13 +259,19 @@ class Presser(Frame):#Button Constructor
         if num==4: #Right
             self.current_column+=2
             direction=0
+            
         print("----------------PRESSED BUTTON ",num)
         print('------------------------')
+        
         with open("ascii-map-test.txt","w") as f:
             new_map=''
+
+            new_row=self.current_row+direction
+            print('New Row:',new_row)
+            print('------------------------')
             
             for k in range(16):
-                if k==(self.current_row+direction): #Finds the new row
+                if k==new_row: #Finds the new row
                     print('Current Row:',self.current_row)
                     print('Direction:',direction)
                     print('------------------------')
