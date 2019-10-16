@@ -14,13 +14,24 @@ except ImportError:
 
 ##import pandas as pd
 
-#Creates the Window
-root=Tk()
+title='Python RPG'
+
+
 #To Manually Size the Window
 ##root.geometry('300x200')
-#Title at the top of the Window
-root.title("Python RPG")
 
+def new_game():
+    create_window()
+
+def load_game():
+    create_window()
+
+def create_window(): #Without this, the RPG would always open upon import.
+    root=Tk() #Creates the Window
+    root.title(title) #Title at the Top
+    app=Presser(root) #Runs Presser
+    root.mainloop() #Runs Tkinter
+    
 class Presser(Frame):#Button Constructor
     def __init__(self,master):
         Frame.__init__(self,master)
@@ -121,7 +132,7 @@ class Presser(Frame):#Button Constructor
                                 width=5,
                                 height=1,
                                 command=self.place_action_widgets)
-        
+
     def place_default_widgets(self):
         self.up_button.grid(row=0, #Places the Up Button on the Grid
                             column=0,
@@ -248,7 +259,7 @@ class Presser(Frame):#Button Constructor
             horizontal+=2
             direction=0
         
-        with open("ascii-map-test.txt","w") as f:
+        with open("ascii-map.txt","w") as f:
             new_map=''
 
             new_row=self.current_row+vertical
@@ -324,5 +335,5 @@ class Presser(Frame):#Button Constructor
 ##
 ##print(zone_control_map)
 
-app=Presser(root)
-root.mainloop()
+if __name__=='__main__':
+    create_window()
