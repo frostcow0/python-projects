@@ -198,19 +198,15 @@ class Presser(Frame):#Button Constructor
         self.action_button.grid_remove() #Removes the Action Button from the Grid
 
     def up(self): #Moves the Player UP by 1 & Prints New Location
-        #self.current_row+=1
         self.map_update(1)
         
     def down(self): #Moves the Player DOWN by 1 & Prints New Location
-        #self.current_row-=1
         self.map_update(2)
 
     def left(self): #Moves the Player LEFT by 1 & Prints New Location
-        #self.current_column-=1
         self.map_update(3)
 
     def right(self): #Moves the Player RIGHT by 1 & Prints New Location
-        #self.current_column+=1
         self.map_update(4)
 
     def inv(self): #Prints the Player's Current Inventory
@@ -218,11 +214,10 @@ class Presser(Frame):#Button Constructor
         print(self.previous_map[self.current_row-1][self.current_column-1])
 
     def read_map_file(self): #Sorts the ascii-map into an Array
-        with open("ascii-map-test.txt") as f: #Can only do Read OR Readlines. The Second will show up blank.
+        with open("ascii-map.txt") as f: #Can only do Read OR Readlines. The Second will show up blank.
             message=f.readlines()
-            #message.reverse() #Otherwise the map would be upside-down
-            row_counter=0
-
+            row_counter=(-1)
+            
             self.previous_map=message
             
             for k in message: #k == the row's text
@@ -232,81 +227,69 @@ class Presser(Frame):#Button Constructor
                     self.current_column=(k.find(self.char_key)+1)
             
             self.map_box.config(state=NORMAL)#Outputs the map to the Map_Box
+            self.map_box.delete('18.0',END)
             for k in message:
+                #print(k)
                 self.map_box.insert(0.0,k)
             self.map_box.config(state=DISABLED)
 
-            print('Column:',str(int(self.current_column/2)))
-            print('Row:',self.current_row)
-            print('Last Direction:',self.last_direction)
-            print('------------------------')
-
-            self.output.config(state=NORMAL) #Outputs X,Y to the Output
-            self.output.insert(0.0,">> "+str(int(self.current_column/2))+", "+str(self.current_row)+"\n")
-            self.output.config(state=DISABLED)
-
     def map_update(self,num): #Updates the Map_Box and X,Y locations in the Output
-        direction=0
+        horizontal=0
+        vertical=0
 
-
-        if num==55:
-            direction=(-1)
         if num==1: #Up
-            #self.current_row+=1
-            direction=1
+            vertical=1
         if num==2: #Down
-            #self.current_row-=1
-            direction=(-1)
+            vertical=(-1)
         if num==3: #Left
-            #self.current_column-=2
+            horizontal-=2
             direction=0
         if num==4: #Right
-            #self.current_column+=2
+            horizontal+=2
             direction=0
-            
-        print("----------------PRESSED BUTTON ",num)
-        print('------------------------')
         
         with open("ascii-map-test.txt","w") as f:
             new_map=''
 
-            new_row=self.current_row+direction
-            print('New Row:',new_row)
-            print(' - Old Row:',self.current_row)
-            print(' - Direction:',direction)
-            
+            new_row=self.current_row+vertical
+            new_column=self.current_column+horizontal
+
+            if new_row>=16 or new_row<=(-1): #To keep the character from going too far up or down.
+                vertical=0
+                if new_row==16:
+                    new_row=15
+                if new_row==(-1):
+                    new_row=0
+
+            if new_column>=34 or new_column<=0: #To keep the character from going too far left or right.
+                horizontal=0
+                if new_column==34:
+                    new_column=32
+                if new_column==0:
+                    new_column=2
+                    
             for k in range(16):
                 if k==new_row: #Finds the new row
-                    print(' - K:',k)
-                    print('------------------------')
-
-                    new_map+=self.row_generator(1) #Adds row with Character
+                    new_map+=self.row_generator(new_column) #Adds row with Character
                 else: new_map+=self.row_generator(0) #Adds empty row
             f.write(new_map)
+            self.current_row=new_row
+            self.current_column=new_column
 
         self.read_map_file()
-##        with open("ascii-map-test.txt") as f:
-##            message=f.readlines()
-##            
-##            self.map_box.config(state=NORMAL) #Outputs the map to the Map_Box
-##            self.map_box.delete('1.0',END)
-##            for k in message:
-##                self.map_box.insert(0.0,k)
-##            self.map_box.config(state=DISABLED)
-##
-##            self.output.config(state=NORMAL) #Outputs X,Y to the Output
-##            self.output.insert(0.0,">> "+str(int(self.current_column/2))+", "+str(self.current_row)+"\n")
-##            self.output.config(state=DISABLED)
+        
+        self.output.config(state=NORMAL) #Outputs X,Y to the Output
+        self.output.insert(0.0,">> "+str(int(self.current_column/2))+", "+str(self.current_row+1)+"\n")
+        self.output.config(state=DISABLED)
 
-        self.last_direction=direction
-        self.current_row=new_row
+        
 
-    def row_generator(self,num): #Builds the new row or provides the empty one
+    def row_generator(self,col): #Builds the new row or provides the empty one
         working_row=''
         
-        if num==1:
+        if col!=0:
             for working_column in range(1,34):
-                if working_column==self.current_column:
+                if working_column==col:
                     working_row+=self.char_key
                 else:
                     if working_column%2:
@@ -317,6 +300,10 @@ class Presser(Frame):#Button Constructor
             return working_row
         else: return self.empty_row
 
+    def minimap_test(self):
+        #use find() and then go to that spot in the map string +1 & -1, go to the 
+        #row above and row below and do the same thing
+        print("yes")
 
 
 ##zone_one={
