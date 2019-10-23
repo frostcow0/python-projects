@@ -14,23 +14,12 @@ except ImportError:
 
 ##import pandas as pd
 
+root=Tk()
 title='Python RPG'
-
+root.title(title)
 
 #To Manually Size the Window
 ##root.geometry('300x200')
-
-def new_game():
-    create_window()
-
-def load_game():
-    create_window()
-
-def create_window(): #Without this, the RPG would always open upon import.
-    root=Tk() #Creates the Window
-    root.title(title) #Title at the Top
-    app=Presser(root) #Runs Presser
-    root.mainloop() #Runs Tkinter
     
 class Presser(Frame):#Button Constructor
     def __init__(self,master):
@@ -254,10 +243,10 @@ class Presser(Frame):#Button Constructor
             vertical=(-1)
         if num==3: #Left
             horizontal-=2
-            direction=0
+            #direction=0
         if num==4: #Right
             horizontal+=2
-            direction=0
+            #direction=0
         
         with open("ascii-map.txt","w") as f:
             new_map=''
@@ -316,6 +305,21 @@ class Presser(Frame):#Button Constructor
         #row above and row below and do the same thing
         print("yes")
 
+def new_game():
+    create_window()
+    print('---------------dog that you are')
+
+def load_game():
+    create_window(1)
+    print('----------------woof')
+
+def create_window(num=0): #Without this, the RPG would always open upon import.
+    root=Tk() #Creates the Window
+    root.title(title) #Title at the Top
+    app=Presser(root) #Runs Presser
+    root.mainloop() #Runs Tkinter
+    if num==1:
+        pass
 
 ##zone_one={
 ##        'items':['computer','tablet','heiroglyphics','king tut'],
@@ -335,5 +339,5 @@ class Presser(Frame):#Button Constructor
 ##
 ##print(zone_control_map)
 
-if __name__=='__main__':
-    create_window()
+app=Presser(root)
+root.mainloop()
