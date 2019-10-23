@@ -17,11 +17,9 @@ except ImportError:
 title='Python RPG'
 
 def new_game():
-    print('Making New Game')
     create_window()
 
 def load_game():
-    print('Loading Game')
     create_window(1)
 
 def create_window(num=0): #Without this, the RPG would always open upon import.
@@ -29,11 +27,9 @@ def create_window(num=0): #Without this, the RPG would always open upon import.
     root.title(title) #Title at the Top
     app=Presser(root) #Runs Presser
     if num==1:
-        app.read_map_file()
-        print('Game Loaded')
+        app.read_map_file() #Loads old Map
     app.map_update(0)
-    root.mainloop() #Runs Tkinter
-
+    root.mainloop() #Runs Tkinter (Doesn't run anything after this until the window is closed)
 
 #To Manually Size the Window
 ##root.geometry('300x200')
@@ -58,9 +54,6 @@ class Presser(Frame):#Button Constructor
         self.create_widgets()
         self.place_default_widgets()
         self.place_action_widgets()
-        #self.map_update(0)
-
-        previous_map=list()
 
     def create_widgets(self):
 
