@@ -49,7 +49,7 @@ class Home(Frame):
                               text='Load Game',
                               command=self.load)
 
-        self.quit=Button(self,
+        self.quit_button=Button(self,
                          width=self.button_width,
                          height=self.button_height,
                          font=self.font,
@@ -74,7 +74,7 @@ class Home(Frame):
                             padx=self.button_pad_x,
                             pady=self.button_pad_y)
 
-        self.quit.grid(row=4,
+        self.quit_button.grid(row=4,
                        column=1,
                        padx=self.button_pad_x,
                        pady=self.button_pad_y)
@@ -86,7 +86,7 @@ class Home(Frame):
 
     def new(self):
         popup = Tk()
-        popup.title('Howdy')
+        popup.title('Confirm')
         popup.background=('Moccasin') #Doesn't work
         
         def run():
@@ -97,7 +97,7 @@ class Home(Frame):
                 
         label=Label(popup,
                     font='Courier 24',
-                    text='Hi :)')
+                    text='Overwrite your save?')
         
         button1=Button(popup,
                        font=self.font,

@@ -16,6 +16,20 @@ except ImportError:
 
 root=Tk()
 title='Python RPG'
+def new_game():
+    create_window()
+
+def load_game():
+    create_window(1)
+
+def create_window(num=0): #Without this, the RPG would always open upon import.
+    root=Tk() #Creates the Window
+    root.title(title) #Title at the Top
+    app=Presser(root) #Runs Presser
+    if num==1:
+        app.read_map_file() #Loads old Map
+    app.map_update(0)
+    root.mainloop() #Runs Tkinter (Doesn't run anything after this until the window is closed)
 root.title(title)
 
 #To Manually Size the Window
@@ -41,10 +55,6 @@ class Presser(Frame):#Button Constructor
         self.create_widgets()
         self.place_default_widgets()
         self.place_action_widgets()
-        self.read_map_file()
-        self.map_update(0)
-
-        previous_map=list()
 
     def create_widgets(self):
 
@@ -305,22 +315,6 @@ class Presser(Frame):#Button Constructor
         #row above and row below and do the same thing
         print("yes")
 
-def new_game():
-    create_window()
-    print('---------------dog that you are')
-
-def load_game():
-    create_window(1)
-    print('----------------woof')
-
-def create_window(num=0): #Without this, the RPG would always open upon import.
-    root=Tk() #Creates the Window
-    root.title(title) #Title at the Top
-    app=Presser(root) #Runs Presser
-    root.mainloop() #Runs Tkinter
-    if num==1:
-        pass
-
 ##zone_one={
 ##        'items':['computer','tablet','heiroglyphics','king tut'],
 ##        'control':['up','down','left','right']}
@@ -338,6 +332,3 @@ def create_window(num=0): #Without this, the RPG would always open upon import.
 ##zone_control_map=pd.concat(frames,keys=['zone_one','zone_two'])
 ##
 ##print(zone_control_map)
-
-app=Presser(root)
-root.mainloop()
