@@ -14,8 +14,8 @@ except ImportError:
 
 ##import pandas as pd
 
+root=Tk()
 title='Python RPG'
-
 def new_game():
     create_window()
 
@@ -30,6 +30,7 @@ def create_window(num=0): #Without this, the RPG would always open upon import.
         app.read_map_file() #Loads old Map
     app.map_update(0)
     root.mainloop() #Runs Tkinter (Doesn't run anything after this until the window is closed)
+root.title(title)
 
 #To Manually Size the Window
 ##root.geometry('300x200')
