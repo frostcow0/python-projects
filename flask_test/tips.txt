@@ -1,2 +1,10 @@
 Paste this in the command prompt to activate the Virtual Environment. Swap 'Activate' with 'Deactivate' to, well, deactivate it.
 C:\Users\isws\Desktop\python-projects\flask_test\env\Scripts\activate
+
+Page automatically updates with changes.
+
+{% block head %} and etc. are a part of Jinja2.
+
+To create the test.db file, go into the Env in Cmd, use Python shell, "import app from db" >> "db.create_all()"
+
+Time in video: 25:52

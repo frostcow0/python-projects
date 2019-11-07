@@ -1,0 +1,12 @@
+body {
+    margin-left:80%;
+    margin-right:80%;
+    width:auto;
+    font-family:sans-serif;
+}
+table, th, td{
+    border:1px solid black;
+}
+table {
+    border-collapse:collapse;
+}
