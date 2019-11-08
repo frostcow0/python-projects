@@ -9,4 +9,8 @@ Page automatically updates with changes.
 
 To create the test.db file, go into the Env in Cmd, use Python shell, "import app from db" >> "db.create_all()"
 
-Time in video: 30:37
+Time in video: 43:03
+
+You have to have the Procfile to have it run on heroku
+
+When you're done with everything, "pip freeze > requirements"
