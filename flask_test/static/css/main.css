@@ -4,10 +4,23 @@ body {
 }
 table, th, td{
     border:1px solid black;
+    text-align:center;
 }
 table {
     border-collapse:collapse;
+    table-layout:fixed;
+    width:50%;
 }
-table, th, td, tr {
-    width:10%;
+th, td {
+    padding:20px;
+}
+th {
+    letter-spacing:2px;
+    background-color:#8adea6;
+}
+tr:nth-child(even) {
+    background-color:#d3e8d9;
+}
+tr:nth-child(odd) {
+    background-color:#c2d1c7;
 }
