@@ -1,4 +1,4 @@
-from flask import Flask, render_template, url_for
+from flask import Flask, render_template, url_for, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 
@@ -18,9 +18,29 @@ class Test(db.Model):
 @app.route('/', methods=['POST','GET'])
 def index():
     if request.method=='POST': #If it's a POST request... then
-        pass
+        task_content=request.form['content']
+        new_task=Test(content=task_content) #New Todo Object
+
+        try:
+            db.session.add(new_task)
+            db.session.commit()
+            return redirect('/')
+        except:
+            return 'There was an issue adding your task'
     else:
-        return render_template('index.html') #You don't have to specify folder name because it knows to look for a folder called 'templates'
+        tasks=Test.query.order_by(Test.date_created).all() #Pulls all of the tasks from Todo and orders them by creation date, then sets them to variable 'task'
+        return render_template('index.html', tasks=tasks) #You don't have to specify folder name because it knows to look for a folder called 'templates'
+
+@app.route('/delete/<int:id>')
+def delete(id):
+    task_to_delete=Test.query.get_or_404(id)
+
+    try:
+        db.session.delete(task_to_delete)
+        db.session.commit()
+        return redirect('/')
+    except:
+        return 'There was a problem deleting that task'
 
 if __name__ == "__main__":
     app.run(debug=True)

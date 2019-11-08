@@ -1,5 +1,7 @@
 Paste this in the command prompt to activate the Virtual Environment. Swap 'Activate' with 'Deactivate' to, well, deactivate it.
-C:\Users\isws\Desktop\python-projects\flask_test\env\Scripts\activate
+env\Scripts\activate
+
+Have to use .\env\Scripts\activate.ps1 with Visual Studio Code
 
 Page automatically updates with changes.
 
@@ -7,4 +9,4 @@ Page automatically updates with changes.
 
 To create the test.db file, go into the Env in Cmd, use Python shell, "import app from db" >> "db.create_all()"
 
-Time in video: 25:52
+Time in video: 30:37

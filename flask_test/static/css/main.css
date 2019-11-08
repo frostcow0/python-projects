@@ -1,7 +1,5 @@
 body {
-    margin-left:80%;
-    margin-right:80%;
-    width:auto;
+    margin:10px;
     font-family:sans-serif;
 }
 table, th, td{
@@ -9,4 +7,7 @@ table, th, td{
 }
 table {
     border-collapse:collapse;
+}
+table, th, td, tr {
+    width:10%;
 }
