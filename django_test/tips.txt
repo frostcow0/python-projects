@@ -9,3 +9,15 @@ After making a Model in an App, in env's cmd type 'python manage.py makemigratio
 After making the Migration for the Model, in env's cmd type 'python manage.py migrate' to link it to the database.
 
 To do querys with the database, in env's cmd type 'python manage.py shell'.
+
+When doing querys, you have to import the app you're querying. For example, we could do 'from polls.models import Question,Choice' and then we could query those.
+
+When setting questions, you can do q=Question(question_text='Question',pub_date=timezone.now()). To use timezone you have to first 'from django.utils import timezone'.
+
+To set a choice to a question, set the Question Primary key to a variable by q=Question.objects.get(pk=PrimaryKeyId(like 1)) and then q.choice_set.create(choice_text='Choice Text')
+
+To see all objects of a type, you can do either Question.objects.all() or the above q.choice_set.all()
+
+To make an admin account, in env's cmd type 'python manage.py createsuperuser'.
+
+
