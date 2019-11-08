@@ -20,4 +20,7 @@ To see all objects of a type, you can do either Question.objects.all() or the ab
 
 To make an admin account, in env's cmd type 'python manage.py createsuperuser'.
 
+To make the global templates folder work, you have to go into /pollster/settings.py to TEMPLATES and add what I have.
+
+Spot in the 'Python Django Crash Course 2019' by Traversy Media: 58:50
 
