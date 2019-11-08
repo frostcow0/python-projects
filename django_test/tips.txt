@@ -1,1 +1,11 @@
 After "pip install django" inside of the env, "django-admin startproject 'project-name'".
+
+Start the server by going into the 'pollster' folder and typing in env's cmd 'python manage.py runserver (optional port number)'
+
+When creating apps, in env's cmd type 'python manage.py startapp "app name"'.
+
+After making a Model in an App, in env's cmd type 'python manage.py makemigrations "app name"' to create the migration for it.
+
+After making the Migration for the Model, in env's cmd type 'python manage.py migrate' to link it to the database.
+
+To do querys with the database, in env's cmd type 'python manage.py shell'.
