@@ -1,7 +1,7 @@
 Paste this in the command prompt to activate the Virtual Environment. Swap 'Activate' with 'Deactivate' to, well, deactivate it.
 env\Scripts\activate
 
-Have to use .\env\Scripts\activate.ps1 with Visual Studio Code
+Have to use .\env\Scripts\activate.ps1 with Visual Studio Code (OR REPLACE PS1 WITH BAT)
 
 Page automatically updates with changes.
 
