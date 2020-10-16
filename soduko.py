@@ -14,7 +14,7 @@ Current To-Do:
 """
 
 from tkinter import *
-from pandas import DataFrame
+import pandas as pd
 
 #Creating the Window
 root=Tk()
@@ -41,16 +41,46 @@ class Application(Frame): #Window Constructor
     def build_dataframe(self,d):
         areas=('area0','area1','area2','area3','area4','area5','area6','area7','area8')
         temp=list()
+        c1=list()
+        c2=list()
+        c3=list()
         for k in range(9):
-            temp.append(DataFrame(d[areas[k]],columns=['1','2','3'],index=['1','2','3']))
-
-        print(temp)
+            temp.append(pd.DataFrame(d[areas[k]],columns=['1','2','3'])) # ,index=['1','2','3']
+            if k==8 or k==5 or k==2:
+                c1.append(temp[len(temp)-1])
+            elif k==7 or k==4 or k==1:
+                c2.append(temp[len(temp)-1])
+            else:
+                c3.append(temp[len(temp)-1])
+            
+        c1.reverse()
+        c2.reverse()
+        c3.reverse()
+        c1=pd.concat(c1)
+        c2=pd.concat(c2)
+        c3=pd.concat(c3)
+            
+        part1=c1.merge(c2)
+        print(part1)
 
     def dict_setup(self,d):
         for i in range(9):
             d['area'+str(i)]=[]
+            
+    def test_fill_frame_setup(self): # Used to auto-fill the table with nums
+        self.framesetup={'area0':'000000000',
+                         'area1':'111111111',
+                         'area2':'222222222',
+                         'area3':'333333333',
+                         'area4':'444444444',
+                         'area5':'555555555',
+                         'area6':'666666666',
+                         'area7':'777777777',
+                         'area8':'888888888'}
+        self.format_frame_setup(self.framesetup)
+        self.build_dataframe(self.framesetup)
 
-    def frame_setup(self,):
+    def frame_setup(self):
         self.fill_frame_setup(self.framesetup,self.listofnums,0,0)
         self.format_frame_setup(self.framesetup)
 
@@ -106,25 +136,29 @@ class Application(Frame): #Window Constructor
                 return self.grid_entries(r,c-1,list[1:])
         
     def read_entries(self):
-        nums=self.listofnums
         for k in self.listofboxes:
-            nums.append(k.get()) # NEED TO assert that the inputs are all integers and that the chart is full, and set this to int(k.get())
+            self.listofnums.append(k.get()) # NEED TO assert that the inputs are all integers and that the chart is full, and set this to int(k.get())
 
         self.frame_setup()
 
     def create_widgets(self): #Creating the Widgets to be placed
-        
         self.submit_button=Button(self,
                                     text='Submit',
                                     width=8,
                                     height=1,
                                     command=self.read_entries)
+        self.test_button=Button(self,
+                                text='Test',
+                                width=2,
+                                height=1,
+                                command=self.test_fill_frame_setup)
 
     def place_widgets(self): #Placing the Widgets on the grid
-        
         self.submit_button.grid(row=9,
                                 column=6,
                                 columnspan=3)
+        self.test_button.grid(row=9,
+                              column=2)
         
 app=Application(root)
 
