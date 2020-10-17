@@ -56,12 +56,12 @@ class Application(Frame): #Window Constructor
         c1.reverse()
         c2.reverse()
         c3.reverse()
-        c1=pd.concat(c1)
-        c2=pd.concat(c2)
-        c3=pd.concat(c3)
+        test=((pd.concat(c1,ignore_index=True,keys=['area0','area1','area2'])),
+              (pd.concat(c2,ignore_index=True)),
+              (pd.concat(c3,ignore_index=True)))
             
-        part1=c1.merge(c2)
-        print(part1)
+        table=pd.concat(test,join='inner',axis=1,ignore_index=True)
+        print(table)
 
     def dict_setup(self,d):
         for i in range(9):
