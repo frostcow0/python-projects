@@ -8,7 +8,7 @@ Input given soduko problem and it should auto-complete.
 Would be a cool idea to color the text boxes with answers.
 
 Current To-Do:
-    GUI with Buttons & 3x3 Text Boxes
+    Soduko solving Algorithm
 
     By: Jon Martin
 """
@@ -56,11 +56,11 @@ class Application(Frame): #Window Constructor
         c1.reverse()
         c2.reverse()
         c3.reverse()
-        test=((pd.concat(c1,ignore_index=True,keys=['area0','area1','area2'])),
+        temp=((pd.concat(c1,ignore_index=True,keys=['area0','area1','area2'])),
               (pd.concat(c2,ignore_index=True)),
               (pd.concat(c3,ignore_index=True)))
             
-        table=pd.concat(test,join='inner',axis=1,ignore_index=True)
+        table=pd.concat(temp,join='inner',axis=1,ignore_index=True)
         print(table)
 
     def dict_setup(self,d):
@@ -137,8 +137,8 @@ class Application(Frame): #Window Constructor
         
     def read_entries(self):
         for k in self.listofboxes:
-            self.listofnums.append(k.get()) # NEED TO assert that the inputs are all integers and that the chart is full, and set this to int(k.get())
-
+            if k.get()=='': self.listofnums.append('-') # Empty field, so we want to fill those for the time being.
+            else: self.listofnums.append(k.get()) # NEED TO assert that the inputs are all integers and that the chart is full, can't set k.get() to int here or it throws unfixable errors
         self.frame_setup()
 
     def create_widgets(self): #Creating the Widgets to be placed
