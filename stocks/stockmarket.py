@@ -13,19 +13,30 @@ def plot_old(frame):
     df=frame
     plt.plot(frame[0],frame[4])
 
-def get_ticker(tickers): # Doesn't pull right. 400 response
+def get_ticker(tickers): # 200 response, no frame.
     current={}
     for i in tickers:
-        current[i+' Current']=pull_current(i)
+        print('~'*3,i,'- current pulled.')
+        current[i]=pull_current(i)
     return current
         
 def get_historical(tickers):
     frames={}
     for i in tickers:
-        frames[i+' History']=pull_historical(i)
-        print('~'*3,i,'was pulled.')
-        plot_old(frames[i+' History'])
+        frames[i]=pull_historical(i)
+        print('~'*3,i,'- history pulled.')
+        #plot_old(frames[i+' History'])
     return frames
 
-print(get_ticker(tickers))
-print(get_historical(tickers))
+def init(tickers):
+    history=get_historical(tickers) # Close of today's is Current Price.
+    current=get_ticker(tickers) # regularMarketPrice & previousClose
+        
+    return currentPrices
+
+current=get_ticker(tickers)
+test= init(tickers)
+
+# Printing the rows to try and figure out how to get the data that I need
+# from the current info. looks like i want rows 9 & 10, now I just need to 
+# pull those, put the leading text as column headers, and throw it into a frame.

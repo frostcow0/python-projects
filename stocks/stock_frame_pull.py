@@ -136,9 +136,11 @@ def pull(stock):
     start=script_data.find('context')-2
     json_data=json.loads(script_data[start:-12])
     
-    json_data['context']['dispatcher']['stores']['QuoteSummaryStore']['assetProfile']['companyOfficers']
-    json_data['context']['dispatcher']['stores']['QuoteSummaryStore']['assetProfile']['longBusinessSummary']
-    json_data['context']['dispatcher']['stores']['QuoteSummaryStore']['secFilings']['filings']
+# =============================================================================
+#     json_data['context']['dispatcher']['stores']['QuoteSummaryStore']['assetProfile']['companyOfficers']
+#     json_data['context']['dispatcher']['stores']['QuoteSummaryStore']['assetProfile']['longBusinessSummary']
+#     json_data['context']['dispatcher']['stores']['QuoteSummaryStore']['secFilings']['filings']
+# =============================================================================
     
     json_data['context']['dispatcher']['stores']['QuoteSummaryStore']['summaryDetail'] # Interesting stuff to look at
     
@@ -161,7 +163,7 @@ def pull_historical(stock):
     stock_url='https://query1.finance.yahoo.com/v7/finance/download/{}?'
     
     params={
-            'range':'15d',
+            'range':'7d',
             'interval':'1d',
             'events':'history'
         }
@@ -174,24 +176,41 @@ def pull_historical(stock):
     frame=pd.DataFrame()
     for row in data[:8]:
         temp=pd.Series(row)
-        frame=pd.concat([frame,temp],axis=1)
+        frame=pd.concat([frame,temp],axis=1) # I'm pretty sure concat is slower.
     frame=frame.T # Rotates the frame 90 degrees.
     
     return frame
 
 def pull_current(stock):
-    stock_url='https://query1.finance.yahoo.com/v7/finance/spark?{}'
+    stock_url='https://query1.finance.yahoo.com/v8/finance/chart/{}?'
     
     params={
+        'region':'US',
         'range':'1d',
         'interval':'5m',
-        'includeTimestamps':'true'
+        'includeTimestamps':'false'
         }
-    response=requests.get(stock_url.format(stock),params=params)
-    return response
+    response=requests.get(stock_url.format(stock),params=params) # 200 Response.
+    
+    file=StringIO(response.text)
+    reader=csv.reader(file)
+    data=list(reader)
+    d={
+       data[0][9][:18]:data[0][9][19:],
+       data[0][11][:13]:data[0][11][14:]
+       }
+    
+    #df=pd.Series(data=d)
+    
+    #frame=pd.DataFrame()
+    #for row in data[:8]:
+    #    temp=pd.Series(row)
+    #    frame=pd.concat([frame,temp],axis=1)
+    #frame=frame.T # Rotates the frame 90 degrees.
+    
+    return d
 
 def pull_trending(count): # Count is how many we pull. Yahoo's default is 5.
     url='https://query1.finance.yahoo.com/v1/finance/trending/US?count={}'
     response=requests.get(url.format(count))
-    
     
