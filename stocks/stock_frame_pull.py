@@ -16,8 +16,8 @@ from bs4 import BeautifulSoup # Had to Conda install this.
 import requests
 
 def pull(stock):
-    url_stats='https://finance.yahoo.com/quote/{}/key-statistics?p={}'
-    url_profile='https://finance.yahoo.com/quote/{}/profile?p={}'
+    url_stats='https://finance.yahoo.com/quote/{}/key-statistics?p={}' # To do
+    url_profile='https://finance.yahoo.com/quote/{}/profile?p={}' # To Do
     
     annual_cf=json_data['context']['dispatcher']['stores']['QuoteSummaryStore']['cashflowStatementHistory']['cashflowStatements']
     quarterly_cf=json_data['context']['dispatcher']['stores']['QuoteSummaryStore']['cashflowStatementHistoryQuarterly']['cashflowStatements']
@@ -156,7 +156,97 @@ def pull_financials(stock):
     annual_is=json_data['context']['dispatcher']['stores']['QuoteSummaryStore']['incomeStatementHistory']['incomeStatementHistory']
     quarterly_is=json_data['context']['dispatcher']['stores']['QuoteSummaryStore']['incomeStatementHistoryQuarterly']['incomeStatementHistory']
     
-    return annual_is,quarterly_is
+    annual_cf=json_data['context']['dispatcher']['stores']['QuoteSummaryStore']['cashflowStatementHistory']['cashflowStatements']
+    quarterly_cf=json_data['context']['dispatcher']['stores']['QuoteSummaryStore']['cashflowStatementHistoryQuarterly']['cashflowStatements']
+    
+    annual_bs=json_data['context']['dispatcher']['stores']['QuoteSummaryStore']['balanceSheetHistory']['balanceSheetStatements']
+    quarterly_bs=json_data['context']['dispatcher']['stores']['QuoteSummaryStore']['balanceSheetHistoryQuarterly']['balanceSheetStatements']
+    
+      # Consolidate annual income sheet
+    annual_is_stmts=[]
+    for s in annual_is:
+        statement={}
+        for key, val in s.items(): # Pulls the row and its important columns
+            try: # Not all keys have a val.
+                statement[key]=val['raw']
+            except TypeError:
+                continue
+            except KeyError:
+                continue
+        annual_is_stmts.append(statement)
+        
+    # Quarterly, too
+    quarterly_is_stmts=[]
+    for s in quarterly_is:
+        statement={}
+        for key, val in s.items(): # Pulls the row and its important columns
+            try: # Not all keys have a val.
+                statement[key]=val['raw']
+            except TypeError:
+                continue
+            except KeyError:
+                continue
+        quarterly_is_stmts.append(statement)
+        
+    # Consolidate annual cash flows
+    annual_cf_stmts=[]
+    for s in annual_cf:
+        statement={}
+        for key, val in s.items(): # Pulls the row and its important columns
+            try: # Not all keys have a val.
+                statement[key]=val['raw']
+            except TypeError:
+                continue
+            except KeyError:
+                continue
+        annual_cf_stmts.append(statement)
+        
+    # Quarterly, too
+    quarterly_cf_stmts=[]
+    for s in quarterly_cf:
+        statement={}
+        for key, val in s.items(): # Pulls the row and its important columns
+            try: # Not all keys have a val.
+                statement[key]=val['raw']
+            except TypeError:
+                continue
+            except KeyError:
+                continue
+        quarterly_cf_stmts.append(statement)
+        
+    # Consolidate annual balance sheet
+    annual_bs_stmts=[]
+    for s in annual_bs:
+        statement={}
+        for key, val in s.items(): # Pulls the row and its important columns
+            try: # Not all keys have a val.
+                statement[key]=val['raw']
+            except TypeError:
+                continue
+            except KeyError:
+                continue
+        annual_bs_stmts.append(statement)
+        
+    # Quarterly, too
+    quarterly_bs_stmts=[]
+    for s in quarterly_bs:
+        statement={}
+        for key, val in s.items(): # Pulls the row and its important columns
+            try: # Not all keys have a val.
+                statement[key]=val['raw']
+            except TypeError:
+                continue
+            except KeyError:
+                continue
+        quarterly_bs_stmts.append(statement)
+    
+    return {'annual is':pd.DataFrame(annual_is).T,
+            'quarterly is':pd.DataFrame(quarterly_is).T,
+            'annual cf':pd.DataFrame(annual_cf).T,
+            'quarterly cf':pd.DataFrame(quarterly_cf).T,
+            'annual bs':pd.DataFrame(annual_bs).T,
+            'quarterly bs':pd.DataFrame(quarterly_bs).T,
+            'annual is stmts':pd.DataFrame(annual_is_stmts).T}
 def pull_historical(stock):
     # Getting the Historical data
     stock_url='https://query1.finance.yahoo.com/v7/finance/download/{}?'

@@ -6,6 +6,7 @@ Created on Tue Mar  2 13:33:42 2021
 """
 from stock_frame_pull import *
 import matplotlib.pyplot as plt
+import time
 
 tickers=input('What tickers would you like to watch? : ').upper().split(' ')
 
@@ -17,33 +18,79 @@ def get_ticker(tickers): # 200 response, no frame.
     current={}
     for i in tickers:
         current[i]=pull_current(i)
-        print('~'*3,i,'- current pulled.')
+        #print('~'*3,i,'- current pulled.')
     return current
         
 def get_historical(tickers):
     frames={}
     for i in tickers:
         frames[i]=pull_historical(i)
-        print('~'*3,i,'- history pulled.')
-        #plot_old(frames[i+' History'])
+        #print('~'*3,i,'- history pulled.')
+        #plot_old(frames[i])
     return frames
 
 def get_financials(ticker):
     sheets={}
     for i in tickers:
         sheets[i]=pull_financials(i)
-        print('~'*3,i,'- financial pulled.')
+        #print('~'*3,i,'- financial pulled.')
     return sheets
 
-def init(tickers):
-    history=get_historical(tickers) # Close of today's is Current Price.
-    current=get_ticker(tickers) # regularMarketPrice & previousClose
-    financial=get_financials(tickers)
-        
-    return history,current,financial
+def current_frame(ticker):
+    temp={}
+    for i in tickers:
+        temp[i]=ticker['current'][i]
+    return pd.DataFrame(data=temp,columns=tickers)
+    
+def find_difference(current):
+    for i in current: #current[i][0] is prev close, 1 is price
+        diff=round(float(current[i][1])-float(current[i][0]),2)
+        if diff<0:
+            word='UP'
+        elif diff==0:
+            print(i,'is currently equal to yesterday\'s close.')
+        else:
+            word='DOWN'
+        print(i,'is',word,'by   $',abs(diff),'\n')
+    print('-'*21,' Done ','-'*21,'\n')
+    
+    return True # for fun
 
-test=init(tickers)
+def chart(current):
+    done=False
+    while done!=True:
+        time.sleep(15) # Waits 2 minutes
+        temp={}
+        tick=get_ticker(tickers)
+        for i in current:
+            temp[i]=tick[i]['regularMarketPrice']
+        current=current.append(temp,ignore_index=True)
+        print(current,'\n\n')
+        
+    print('*'*30,'Stopping.')
+    
+        
+    
+def init(ticker):
+    ticker={
+        'history':get_historical(tickers),
+        'current':get_ticker(tickers),
+        'financial':get_financials(tickers)
+        }
+    print('-'*20,' Loaded ','-'*20,'\n')
+    
+    current=current_frame(ticker)
+    print(current,'\n')
+    find_difference(current)
+    
+    chart(current)
+    
+    return ticker
+
+total=init(tickers)
+
 
 # To use a Dict or a Frame, that is the question.
 
 # Maybe the sheets are one layer too deep? Or index them.
+# The annual statements need to be sum of the columns.
