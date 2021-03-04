@@ -18,25 +18,6 @@ import requests
 def pull(stock):
     url_stats='https://finance.yahoo.com/quote/{}/key-statistics?p={}'
     url_profile='https://finance.yahoo.com/quote/{}/profile?p={}'
-    url_financials='https://finance.yahoo.com/quote/{}/financials?p={}'
-    
-    response=requests.get(url_financials.format(stock,stock)) # Pulls the page.
-
-    soup=BeautifulSoup(response.text,'html.parser') # Parses the page.
-
-    pattern=re.compile(r'\s--\sData\s--\s') # The point in the page's source code where the data-obtaining javascripts are.
-    script_data=soup.find('script',text=pattern).contents[0]
-
-    start=script_data.find('context')-2 # We want to start two characters after the word context to avoid the javascript.
-
-    #-----------------------#
-
-    json_data=json.loads(script_data[start:-12]) # We don't want the last 12 characters in the string. JSON loads returns a Dictionary.
-
-    #-----------------------#
-
-    annual_is=json_data['context']['dispatcher']['stores']['QuoteSummaryStore']['incomeStatementHistory']['incomeStatementHistory']
-    quarterly_is=json_data['context']['dispatcher']['stores']['QuoteSummaryStore']['incomeStatementHistoryQuarterly']['incomeStatementHistory']
     
     annual_cf=json_data['context']['dispatcher']['stores']['QuoteSummaryStore']['cashflowStatementHistory']['cashflowStatements']
     quarterly_cf=json_data['context']['dispatcher']['stores']['QuoteSummaryStore']['cashflowStatementHistoryQuarterly']['cashflowStatements']
@@ -158,6 +139,24 @@ def pull(stock):
     
     #-----------------------#
     
+def pull_financials(stock):    
+    url_financials='https://finance.yahoo.com/quote/{}/financials?p={}'
+    
+    response=requests.get(url_financials.format(stock,stock)) # Pulls the page.
+
+    soup=BeautifulSoup(response.text,'html.parser') # Parses the page.
+
+    pattern=re.compile(r'\s--\sData\s--\s') # The point in the page's source code where the data-obtaining javascripts are.
+    script_data=soup.find('script',text=pattern).contents[0]
+
+    start=script_data.find('context')-2 # We want to start two characters after the word context to avoid the javascript.
+
+    json_data=json.loads(script_data[start:-12]) # We don't want the last 12 characters in the string. JSON loads returns a Dictionary.
+
+    annual_is=json_data['context']['dispatcher']['stores']['QuoteSummaryStore']['incomeStatementHistory']['incomeStatementHistory']
+    quarterly_is=json_data['context']['dispatcher']['stores']['QuoteSummaryStore']['incomeStatementHistoryQuarterly']['incomeStatementHistory']
+    
+    return annual_is,quarterly_is
 def pull_historical(stock):
     # Getting the Historical data
     stock_url='https://query1.finance.yahoo.com/v7/finance/download/{}?'
@@ -175,7 +174,7 @@ def pull_historical(stock):
     data=list(reader)
     frame=pd.DataFrame()
     for row in data[:8]:
-        temp=pd.Series(row)
+        temp=pd.Series(row,name='stock')
         frame=pd.concat([frame,temp],axis=1) # I'm pretty sure concat is slower.
     frame=frame.T # Rotates the frame 90 degrees.
     

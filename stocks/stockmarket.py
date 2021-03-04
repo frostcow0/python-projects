@@ -16,8 +16,8 @@ def plot_old(frame):
 def get_ticker(tickers): # 200 response, no frame.
     current={}
     for i in tickers:
-        print('~'*3,i,'- current pulled.')
         current[i]=pull_current(i)
+        print('~'*3,i,'- current pulled.')
     return current
         
 def get_historical(tickers):
@@ -28,15 +28,22 @@ def get_historical(tickers):
         #plot_old(frames[i+' History'])
     return frames
 
+def get_financials(ticker):
+    sheets={}
+    for i in tickers:
+        sheets[i]=pull_financials(i)
+        print('~'*3,i,'- financial pulled.')
+    return sheets
+
 def init(tickers):
     history=get_historical(tickers) # Close of today's is Current Price.
     current=get_ticker(tickers) # regularMarketPrice & previousClose
+    financial=get_financials(tickers)
         
-    return currentPrices
+    return history,current,financial
 
-current=get_ticker(tickers)
-test= init(tickers)
+test=init(tickers)
 
-# Printing the rows to try and figure out how to get the data that I need
-# from the current info. looks like i want rows 9 & 10, now I just need to 
-# pull those, put the leading text as column headers, and throw it into a frame.
+# To use a Dict or a Frame, that is the question.
+
+# Maybe the sheets are one layer too deep? Or index them.
