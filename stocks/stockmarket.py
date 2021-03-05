@@ -7,6 +7,9 @@ Created on Tue Mar  2 13:33:42 2021
 from stock_frame_pull import *
 import matplotlib.pyplot as plt
 import time
+import os
+
+clear=lambda:os.system('cls') # Didn't get this to work.
 
 tickers=input('What tickers would you like to watch? : ').upper().split(' ')
 
@@ -25,15 +28,12 @@ def get_historical(tickers):
     frames={}
     for i in tickers:
         frames[i]=pull_historical(i)
-        #print('~'*3,i,'- history pulled.')
-        #plot_old(frames[i])
     return frames
 
 def get_financials(ticker):
     sheets={}
     for i in tickers:
         sheets[i]=pull_financials(i)
-        #print('~'*3,i,'- financial pulled.')
     return sheets
 
 def current_frame(ticker):
@@ -45,7 +45,7 @@ def current_frame(ticker):
 def find_difference(current):
     for i in current: #current[i][0] is prev close, 1 is price
         diff=round(float(current[i][1])-float(current[i][0]),2)
-        if diff<0:
+        if diff>0:
             word='UP'
         elif diff==0:
             print(i,'is currently equal to yesterday\'s close.')
@@ -59,17 +59,16 @@ def find_difference(current):
 def chart(current):
     done=False
     while done!=True:
-        time.sleep(15) # Waits 2 minutes
+        time.sleep(10) #
         temp={}
         tick=get_ticker(tickers)
         for i in current:
             temp[i]=tick[i]['regularMarketPrice']
+        clear()
         current=current.append(temp,ignore_index=True)
-        print(current,'\n\n')
+        print(current.iloc[::-1].head(5),'\n\n')
         
-    print('*'*30,'Stopping.')
-    
-        
+    print('*'*30,'Stopping.')    
     
 def init(ticker):
     ticker={
@@ -94,3 +93,5 @@ total=init(tickers)
 
 # Maybe the sheets are one layer too deep? Or index them.
 # The annual statements need to be sum of the columns.
+
+# Need to fix the clearing part
