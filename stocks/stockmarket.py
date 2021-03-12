@@ -59,7 +59,7 @@ def find_difference(current):
 def chart(current):
     done=False
     while done!=True:
-        time.sleep(10) #
+        time.sleep(30)
         temp={}
         tick=get_ticker(tickers)
         for i in current:
