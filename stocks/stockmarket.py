@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import time
 import os
 
-clear=lambda:os.system('cls') # Didn't get this to work.
+clear=lambda:os.system('cls')
 
 tickers=input('What tickers would you like to watch? : ').upper().split(' ')
 
@@ -45,7 +45,7 @@ def current_frame(ticker):
 def find_difference(current):
     for i in current: #current[i][0] is prev close, 1 is price
         diff=round(float(current[i][1])-float(current[i][0]),2)
-        if diff>0:
+        if diff<0:
             word='UP'
         elif diff==0:
             print(i,'is currently equal to yesterday\'s close.')
