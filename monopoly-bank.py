@@ -6,13 +6,19 @@ Created on Tue Mar 16 20:31:50 2021
 """
 
 import pandas as pd
+import logging
 import os
 
 class Bank():
     def __init__(self,num_users,start_bal):
+        format = "%(asctime)s: %(message)s"
+        logging.basicConfig(format=format, level=logging.INFO,
+                        datefmt="%H:%M:%S")
+        
         self.num_users=num_users
         self.start_bal=start_bal
         self.nicknames=[]
+        self.prev_command=None
         self.get_nicks()
         clear()
         self.init_frame()
@@ -25,12 +31,19 @@ class Bank():
     def init_frame(self):
         d={"Balance":self.start_bal,"Resources":0}
         self.df=pd.DataFrame(data=d,index=self.nicknames)
-        print(self.df)
-        print('-'*30)
         self.wait()
         
     def wait(self):
-        nput=input(" : ").split(' ')
+        clear()
+        print(self.df)
+        print('-'*30)
+        print('last input : ',self.prev_command)
+        print('-'*30)
+        nput=input(" : ")
+        self.prev_command=nput
+        nput=nput.split(' ')
+        if len(nput)==1:
+            self.command_usage(nput)
         self.check_command(nput)
         
     def check_command(self,nput):
@@ -39,14 +52,27 @@ class Bank():
                   "trade":self.trade}
         commands[nput[0]](nput[1::])
         
+    def command_usage(self,nput):
+        if nput=='pay':
+            pass
+        elif nput=='buy':
+            pass
+        elif nput=='trade':
+            pass
+        else:
+            logging.info('Not a command. Try again.')
+        self.wait()
+        
+        
     def pay(self,nput):
-        send_bal=self.df.iloc[self.nicknames.index(nput[0])][0]
-        receive_bal=self.df.iloc[self.nicknames.index(nput[1])][0]
-        send_bal=int(send_bal)-int(nput[2])
-        receive_bal=int(receive_bal)+int(nput[2])
-        clear()
-        print(self.df)
-        print('-'*30)
+        try:
+            if nput[0]=='bank': # Bank pays someone for community chest or chance.
+                self.df.iloc[self.nicknames.index(nput[1])][0]+=int(nput[2])
+            else:
+                self.df.iloc[self.nicknames.index(nput[0])][0]-=int(nput[2]) # Sender
+                self.df.iloc[self.nicknames.index(nput[1])][0]+=int(nput[2]) # Receiver
+        except IndexError:
+            self.prev_commands.append(logging.info('Error, not enough values.'))
         self.wait()
         
     def buy(self,nput):
@@ -54,6 +80,9 @@ class Bank():
         
     def trade(self,nput):
         print('buy')
+        
+    def end(self):
+        pass
         
 clear=lambda:os.system('cls')
             
