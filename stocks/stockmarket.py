@@ -13,6 +13,14 @@ clear=lambda:os.system('cls')
 
 tickers=input('What tickers would you like to watch? : ').upper().split(' ')
 
+def keyword_check(tickers):
+    placeholder_airlines=['UAL','AAL','DAL','SAVE']
+    if 'AIRLINES' in tickers:
+        tickers.pop(tickers.index('AIRLINES'))
+        for ticker in placeholder_airlines:
+            tickers.append(ticker)
+    return tickers
+
 def plot_old(frame):
     df=frame
     plt.plot(frame[0],frame[4])
@@ -71,6 +79,7 @@ def chart(current):
     print('*'*30,'Stopping.')    
     
 def init(ticker):
+    ticker=keyword_check(ticker)
     ticker={
         'history':get_historical(tickers),
         'current':get_ticker(tickers),
