@@ -17,7 +17,7 @@ logging.basicConfig(format=format, level=logging.INFO,
 
 data=pd.read_csv(r'C:\Users\gamet\OneDrive\Documents\Data\owid-covid-data.csv')
 
-#old_data=pd.read_pickle('covid_trial_1')
+old_data=pd.read_pickle('covid_trial_1')
 
 # Works. Now, to do stuff >:)
 
@@ -96,3 +96,5 @@ print('Labels being tested: ',info['Labels'])
 info['Best MAEs']=model_creation(data,info['Labels'],features)
 
 df=pd.DataFrame(info)
+
+df.to_pickle('covid_trial_2')
