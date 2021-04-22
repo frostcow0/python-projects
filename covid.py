@@ -9,8 +9,15 @@ from sklearn.metrics import mean_absolute_error as mae
 from sklearn.model_selection import train_test_split as tts
 from sklearn.preprocessing import LabelEncoder
 import pandas as pd
+import logging
+
+format = "%(asctime)s: %(message)s"
+logging.basicConfig(format=format, level=logging.INFO,
+                    datefmt="%H:%M:%S")
 
 data=pd.read_csv(r'C:\Users\gamet\OneDrive\Documents\Data\owid-covid-data.csv')
+
+#old_data=pd.read_pickle('covid_trial_1')
 
 # Works. Now, to do stuff >:)
 
@@ -39,30 +46,53 @@ data=data.fillna(0) # Trying to fill in the NAN spots with 0
 #     print('-'*40)
 # =============================================================================
     
-features=['iso_code_cat','total_cases_per_million','icu_patients','total_tests_per_thousand',
-          'positive_rate','total_deaths_per_million','tests_per_case']
+def model_creation(data,labels,features):
+    logging.info('='*40)
+    X=data[features]
+    
+    best_maes=[]
+    
+    for label in labels:
+        logging.info('-'*40)
+        y=data[label]
+        logging.info('Beginning model testing for label {}.'.format(label))
+        #best_model=None
+        best_model_mae=999999999
+        for i in range(3): # previously 15
+            train_X,val_X,train_y,val_y=tts(X,y)
+            
+            model=RandomForestRegressor()
+            
+            model.fit(train_X,train_y)
+            
+            val_predictions=model.predict(val_X)
+            val_mae=mae(val_predictions,val_y)
+            
+            if val_mae<best_model_mae:
+                #best_model=model
+                best_model_mae=val_mae
+                logging.info('**New best model achieved below. Iteration #{}'.format(i))
+                
+            logging.info('Validation MAE: {:,.2f}'.format(val_mae))
+        best_maes.append(best_model_mae)
+    return best_maes
 
-y=data.extreme_poverty
-X=data[features]
+features=['iso_code_cat','extreme_poverty','gdp_per_capita','population',
+          'aged_65_older','aged_70_older','cardiovasc_death_rate','diabetes_prevalence',
+          'female_smokers','male_smokers']
+info={
+      'Labels':[]
+      }
+accepted_datatypes=['float64','float32','int64','int32']
+for category in data.columns:
+    if data[category].dtype not in accepted_datatypes:
+        logging.info('Category - {} - is the wrong dtype.'.format(category))
+        continue
+    if category not in features:
+        info['Labels'].append(category)
 
-best_model=None
-best_model_mae=1
+print('Labels being tested: ',info['Labels'])
 
-for i in range(10):
-    train_X,val_X,train_y,val_y=tts(X,y) # random_state=23 gets 0.33
-    
-    model=RandomForestRegressor() # random_state=23 gets 0.33
-    
-    model.fit(train_X,train_y)
-    
-    val_predictions=model.predict(val_X)
-    val_mae=mae(val_predictions,val_y)
-    
-    if val_mae<best_model_mae:
-        best_model=model
-        best_model_mae=val_mae
-        print("-"*10,"New best model achieved below. Iteration #{}".format(i))
-        
-    print('Validation MAE: {:,.2f}'.format(val_mae))
+info['Best MAEs']=model_creation(data,info['Labels'],features)
 
-    
+df=pd.DataFrame(info)
