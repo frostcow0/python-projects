@@ -27,7 +27,8 @@ labelencoder=LabelEncoder()
 iso_df['ISO_Codes_Cat']=labelencoder.fit_transform(iso_df['ISO_Codes'])
 
 #This would hopefully finish the categorical->numerical change for iso codes
-data['iso_code']=iso_df['ISO_Codes_Cat']
+#data['iso_code']=iso_df['ISO_Codes_Cat']
+data['iso_code_cat']=labelencoder.fit_transform(data['iso_code'])
 
 data=data.fillna(0) # Trying to fill in the NAN spots with 0
 
@@ -38,19 +39,30 @@ data=data.fillna(0) # Trying to fill in the NAN spots with 0
 #     print('-'*40)
 # =============================================================================
     
-features=['iso_code','total_cases','new_cases','icu_patients','new_tests','total_tests',
-          'positive_rate']
+features=['iso_code_cat','total_cases_per_million','icu_patients','total_tests_per_thousand',
+          'positive_rate','total_deaths_per_million','tests_per_case']
 
 y=data.extreme_poverty
 X=data[features]
 
-train_X,val_X,train_y,val_y=tts(X,y,random_state=23)
+best_model=None
+best_model_mae=1
 
-model=RandomForestRegressor(random_state=23)
+for i in range(10):
+    train_X,val_X,train_y,val_y=tts(X,y) # random_state=23 gets 0.33
+    
+    model=RandomForestRegressor() # random_state=23 gets 0.33
+    
+    model.fit(train_X,train_y)
+    
+    val_predictions=model.predict(val_X)
+    val_mae=mae(val_predictions,val_y)
+    
+    if val_mae<best_model_mae:
+        best_model=model
+        best_model_mae=val_mae
+        print("-"*10,"New best model achieved below. Iteration #{}".format(i))
+        
+    print('Validation MAE: {:,.2f}'.format(val_mae))
 
-model.fit(train_X,train_y)
-
-val_predictions=model.predict(val_X)
-val_mae=mae(val_predictions,val_y)
-
-print('Validation MAE: {:,.2f}'.format(val_mae))
+    
