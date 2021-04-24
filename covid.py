@@ -17,7 +17,10 @@ logging.basicConfig(format=format, level=logging.INFO,
 
 data=pd.read_csv(r'C:\Users\gamet\OneDrive\Documents\Data\owid-covid-data.csv')
 
-old_data=pd.read_pickle('covid_trial_1')
+test=trial_1=pd.read_pickle('covid_trial_1')
+trial_2=pd.read_pickle('covid_trial_2')
+test['Best MAEs 2']=trial_2['Best MAEs']
+test['Difference']=test['Best MAEs']-test['Best MAEs 2']
 
 # Works. Now, to do stuff >:)
 
@@ -58,7 +61,7 @@ def model_creation(data,labels,features):
         logging.info('Beginning model testing for label {}.'.format(label))
         #best_model=None
         best_model_mae=999999999
-        for i in range(3): # previously 15
+        for i in range(7): # previously 15
             train_X,val_X,train_y,val_y=tts(X,y)
             
             model=RandomForestRegressor()
@@ -83,6 +86,25 @@ features=['iso_code_cat','extreme_poverty','gdp_per_capita','population',
 info={
       'Labels':[]
       }
+
+sus_labels=['new_deaths_per_million','new_deaths_smoothed_per_million',
+            'reproduction_rate','weekly_icu_admissions','weekly_icu_admissions_per_million,',
+            'positive_rate']
+
+
+
+less_than_thou=['total_cases','new_cases']
+
+less_than_hund=['']
+
+less_than_ten=['']
+
+less_than_one=['']
+
+greater_than_thou=[label for label in info['Labels'] if label not in less_than_thou]
+
+greater_than_thou2=list(filter(lambda x:x not in less_than_thou,info['Labels']))
+
 accepted_datatypes=['float64','float32','int64','int32']
 for category in data.columns:
     if data[category].dtype not in accepted_datatypes:
@@ -91,10 +113,12 @@ for category in data.columns:
     if category not in features:
         info['Labels'].append(category)
 
-print('Labels being tested: ',info['Labels'])
-
-info['Best MAEs']=model_creation(data,info['Labels'],features)
-
-df=pd.DataFrame(info)
-
-df.to_pickle('covid_trial_2')
+# =============================================================================
+# print('Labels being tested: ',info['Labels'])
+# 
+# info['Best MAEs']=model_creation(data,info['Labels'],features)
+# 
+# df=pd.DataFrame(info)
+# 
+# df.to_pickle('covid_trial_3')
+# =============================================================================
