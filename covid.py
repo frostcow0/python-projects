@@ -18,7 +18,8 @@ logging.basicConfig(format=format, level=logging.INFO,
 data=pd.read_csv(r'C:\Users\gamet\OneDrive\Documents\Data\owid-covid-data.csv')
 
 trial_1=pd.read_pickle('covid_trial_1')
-latest_trial=trial_2=pd.read_pickle('covid_trial_2')
+trial_2=pd.read_pickle('covid_trial_2')
+latest_trial=trial_3=pd.read_pickle('covid_trial_3')
 
 # Works. Now, to do stuff >:)
 
@@ -99,17 +100,20 @@ def label_setup():
             continue
         if category not in features:
             labels['usable'].append(category)
-            if len(latest_trial[latest_trial['Labels']==category]):
+            if len(latest_trial[latest_trial['new_test_labels']==category]):
                 labels['new_test_labels'].append(category)
             
     return labels
 
 labels=label_setup()
-
-print('Labels being tested: ',labels['new_test_labels'])
-
-labels['Best MAEs']=model_creation(data,labels['new_test_labels'],features)
-
-df=pd.DataFrame(labels)
-
-df.to_pickle('covid_trial_3')
+# =============================================================================
+# 
+# print('Labels being tested: ',labels['new_test_labels'])
+# 
+# labels['Best MAEs']=model_creation(data,labels['new_test_labels'],features)
+# 
+# df=pd.DataFrame(labels)
+# 
+# df.to_pickle('covid_trial_3')
+# 
+# =============================================================================
