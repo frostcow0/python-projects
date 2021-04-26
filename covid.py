@@ -30,19 +30,21 @@ features=['iso_code_cat','extreme_poverty','gdp_per_capita','population',
           'aged_65_older','aged_70_older','cardiovasc_death_rate','diabetes_prevalence',
           'female_smokers','male_smokers']
 
-#create initial DF
-iso_codes=data.iso_code.unique()
-iso_df=pd.DataFrame(iso_codes,columns=['ISO_Codes'])
-#create labelencoder instance
-labelencoder=LabelEncoder()
-#assign numerical values and store in new column
-iso_df['ISO_Codes_Cat']=labelencoder.fit_transform(iso_df['ISO_Codes'])
-
-#This would hopefully finish the categorical->numerical change for iso codes
-#data['iso_code']=iso_df['ISO_Codes_Cat']
-data['iso_code_cat']=labelencoder.fit_transform(data['iso_code'])
-
-data=data.fillna(0) # Trying to fill in the NAN spots with 0
+def iso_code_conversion():
+    global data
+    #create initial DF
+    iso_codes=data.iso_code.unique()
+    iso_df=pd.DataFrame(iso_codes,columns=['ISO_Codes'])
+    #create labelencoder instance
+    labelencoder=LabelEncoder()
+    #assign numerical values and store in new column
+    iso_df['ISO_Codes_Cat']=labelencoder.fit_transform(iso_df['ISO_Codes'])
+    
+    #This would hopefully finish the categorical->numerical change for iso codes
+    #data['iso_code']=iso_df['ISO_Codes_Cat']
+    data['iso_code_cat']=labelencoder.fit_transform(data['iso_code'])
+    
+    data=data.fillna(0) # Trying to fill in the NAN spots with 0
 
 # =============================================================================
 # print('='*40)
@@ -60,7 +62,7 @@ def model_creation(data,labels,features):
     for label in labels:
         logging.info('-'*40)
         y=data[label]
-        logging.info('Beginning model testing for label {}.'.format(label))
+        logging.info('Beginning model testing for label {0}. {1}% Complete.'.format(label))
         #best_model=None
         best_model_mae=999999999
         for i in range(25): # previously 15
@@ -105,15 +107,11 @@ def label_setup():
             
     return labels
 
+iso_code_conversion()
 labels=label_setup()
-# =============================================================================
-# 
-# print('Labels being tested: ',labels['new_test_labels'])
-# 
-# labels['Best MAEs']=model_creation(data,labels['new_test_labels'],features)
-# 
-# df=pd.DataFrame(labels)
-# 
-# df.to_pickle('covid_trial_3')
-# 
-# =============================================================================
+
+labels['Best MAEs']=model_creation(data,labels['new_test_labels'],features)
+
+df=pd.DataFrame(labels)
+
+df.to_pickle('covid_trial_3')
