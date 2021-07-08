@@ -24,15 +24,22 @@ qcc1 = {
         'v_sub': v_sub,
         }
 
-#title = 'DB Search'
-title = 'Columns'
 class Database():
     def __init__(self, name, ref):
         self.name = name
         self.tables = self.build_tables(ref)
 
+    def create_popup(self, query):
+        root=Tk() #Creates the Window
+        root.title('How do you want to Export?') #Title at the Top
+        app=Popup(root, query) #Runs Presser or Lbox
+        root.mainloop()
+
     def __str__(self):
         return str(self.name)
+
+    def pull_query(self, query):
+        pass # for the popup button to call
 
     def build_tables(self, ref):
         tables = []
@@ -53,8 +60,6 @@ class Database():
                         req_tables[table] = [choice]
                     else:
                         req_tables[table].append(choice)
-        # for table, choices in req_tables.items():
-        #     print(table, choices)
         self.build_query(req_tables)
 
     def build_table_score(self, choices_tables):
@@ -110,9 +115,7 @@ class Database():
             query += select + frm + where
         print('='*60)
         print(query)
-        
-                    
-            
+        self.create_popup(query)
 
     def join(self, tables):
         from collections import defaultdict
@@ -154,24 +157,18 @@ class Table():
     def __str__(self):
         return str(self.name)
 
-    def join(self, table2):
-        potential_join = ''
-        for column in self.columns:
-            if column in table2.columns:
-                potential_join = column
-                break
     def name(self):
         return str(self.name)
 
 def create_app():
     root=Tk() #Creates the Window
-    root.title(title) #Title at the Top
+    root.title('Query Builder') #Title at the Top
     app=Lbox(root) #Runs Presser or Lbox
     root.mainloop() #Runs Tkinter (Doesn't run anything after this until the window is closed)
 
 class Lbox(Frame):
-    def __init__(self,master):
-        Frame.__init__(self,master)
+    def __init__(self, master):
+        Frame.__init__(self, master)
         self.yscrollbar = Scrollbar(master)
         self.yscrollbar.pack(side = RIGHT, fill = Y)
         self.label = Label(master,
@@ -215,6 +212,70 @@ class Lbox(Frame):
                         else:
                             choices_tables[choice].append(table)
             obj.get_req_tables(choices_tables)
+
+class Popup(Frame):
+    def __init__(self, master, query):
+        Frame.__init__(self, master)
+        self.query = query
+        self.pack()
+        self.place_buttons()
+        
+    def place_buttons(self):
+        self.sql = Button(self,
+                  text = 'SQL Query',
+                  font = ('Veridian', 12),
+                  padx = 3, pady = 3,
+                  command = self.export_sql_query)
+        self.sql.pack()
+        self.xlsx = Button(self,
+                  text = 'Excel',
+                  font = ('Veridian', 12),
+                  padx = 3, pady = 3,
+                  command = self.export_xlsx)
+        self.xlsx.pack()
+        self.csv = Button(self,
+                  text = 'CSV',
+                  font = ('Veridian', 12),
+                  padx = 3, pady = 3,
+                  command = self.export_xlsx)
+        self.csv.pack()
+
+        self.widgets = [self.sql, self.xlsx, self.csv]
+
+    def back(self):
+        for widget in self.widgets:
+            widget.pack_forget()
+        self.place_buttons()
+    
+    def export_sql_query(self):
+        for widget in self.widgets:
+            widget.pack_forget()
+        self.text = Text(self,
+                        height = 10,
+                        width = 60,
+                        font = ("Veridian", 10),
+                        padx = 3, pady = 3)
+        self.text.pack()
+        self.back_button = Button(self,
+                  text = 'Back',
+                  font = ('Veridian', 12),
+                  padx = 3, pady = 3,
+                  command = self.back)
+        self.back_button.pack()
+
+        self.text.insert(END, self.query)
+
+        self.widgets = [self.text, self.back_button]
+
+    def export_xlsx(self):
+        for widget in self.widgets:
+            widget.pack_forget()
+        pass
+
+    def export_csv(self):
+        for widget in self.widgets:
+            widget.pack_forget()
+        pass
 
 dwh1_db = Database('dwh1', dwh1)
 
