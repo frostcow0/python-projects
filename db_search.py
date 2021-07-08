@@ -78,11 +78,58 @@ class Database():
         return k[v.index(max(v))]
 
     def build_query(self, req_tables):
-        pass
-        for table, choices in req_tables.items():
-            if table.columns in table.columns.next():
-                print("yippe")
-                    
+        query = ''
+        if len(req_tables) == 1:
+            statement = ''
+            for table, choices in req_tables.items():
+                statement += 'SELECT\n\t'
+                for choice in choices:
+                    statement += f'{choice}, '
+                statement = statement[:len(statement) - 2]
+                statement += f'\nFROM\n\t{table}'
+                print(statement)
+        else: 
+            joins = self.join([x for x in req_tables.keys()])
+            
+
+    def join(self, tables):
+        from collections import defaultdict
+        joins = defaultdict(list)
+        for i, table1 in enumerate(tables):
+            if i == len(tables)-1:
+                break
+            for j, table2 in enumerate(tables[i+1:]):
+                common = list(set(table1.columns).intersection(set(table2.columns)))
+                if common:
+                    joins[table1].append((table2, common[0]))
+            if not joins[table1]:
+                x = False
+                for j, table2 in enumerate(tables):
+                    if table2 == table1: 
+                        continue
+                    if x:
+                        break
+                    for k, table3 in enumerate(self.tables):
+                        if table3 == table1 or table3 == table2:
+                            continue
+                        common1 = list(set(table1.columns).intersection(set(table3.columns)))
+                        common2 = list(set(table2.columns).intersection(set(table3.columns)))
+                        if common1 and common2:
+                            joins[table1].append((table3, common1[0])) # maybe ?
+                            joins[table2].append((table3, common2[0]))
+                            x = True
+                            break
+                if not x:
+                    raise("no common shit found")
+        return joins
+        """
+        for table1 in tables:
+            for table2 in tables:
+                table1.columns=set(table1.columns)
+                table2.columns=set(table2.columns)
+                t1_t2 = A.intersection(B)[0]
+
+        """
 
 class Table():
     def __init__(self, name, columns, database):
