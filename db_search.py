@@ -9,10 +9,15 @@ try:
 except ImportError:
     from Tkinter import *
 from collections import Counter
+import pandas
+import cx_Oracle
+
+
 
 # Tables
-bp_subscriber_product = ['sub_id', 'subscriber', 'feature_1', 'feature_2']
-bp_subscriber = ['sub_id', 'subscriber', 'market', 'address', 'email']
+bp_subscriber_product = ['SUBSCRIBER_ID', 'SUBSCRIBER', 'feature_1', 'feature_2']
+bp_subscriber = ['SUBSCRIBER_ID', 'SUBSCRIBER', 'SUBSCRIBER_COMPANY_NAME', 'MARKET', 'BUSINESS_UNIT', 'SUSBCRIBER_STATUS', 'SUBSCRIBER_STATE',
+                'SERVICE_COMBINATION', 'SERVICE_SET', 'SERVICE_START_DATE', 'SUBSCRIBER_END_DATE', 'BUILDING_TYPE']
 
 v_sub = ['sub_id', 'subscriber', 'market', 'mrkt_typ']
 # Databases
@@ -28,6 +33,7 @@ class Database():
     def __init__(self, name, ref):
         self.name = name
         self.tables = self.build_tables(ref)
+        self.init_db_connection()
 
     def create_popup(self, query):
         root=Tk() #Creates the Window
@@ -38,8 +44,20 @@ class Database():
     def __str__(self):
         return str(self.name)
 
-    def pull_query(self, query):
-        pass # for the popup button to call
+    def init_db_connection(self):
+        try:
+            dsn_tns = cx_Oracle.makedsn('HOSTNAME', 'PORTNUMBER', service_name = 'SERVICENAME', )
+            self.connection = cx_Oracle.connect(
+                user = "jmartin",
+                password = "", # put in later
+                dsn = dsn_tns)
+            self.cursor = self.connection.cursor()
+        except Exception as error:
+            print("Couldn't connect to the database. -- "+repr(error))
+
+    def execute_query(self, query):
+        data = self.cursor.execute(query)
+        return data
 
     def build_tables(self, ref):
         tables = []
