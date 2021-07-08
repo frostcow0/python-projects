@@ -11,7 +11,7 @@ except ImportError:
 from collections import Counter
 
 # Tables
-bp_subscriber_product = ['sub_id', 'subscriber', 'feature 1', 'feature 2']
+bp_subscriber_product = ['sub_id', 'subscriber', 'feature_1', 'feature_2']
 bp_subscriber = ['sub_id', 'subscriber', 'market', 'address', 'email']
 
 v_sub = ['sub_id', 'subscriber', 'market', 'mrkt_typ']
@@ -53,8 +53,8 @@ class Database():
                         req_tables[table] = [choice]
                     else:
                         req_tables[table].append(choice)
-        for table, choices in req_tables.items():
-            print(table, choices)
+        # for table, choices in req_tables.items():
+        #     print(table, choices)
         self.build_query(req_tables)
 
     def build_table_score(self, choices_tables):
@@ -70,7 +70,6 @@ class Database():
         return table_score
 
     def keywithmaxval(self, d):
-        #print(f'incoming table_score - {table, choices}')
         """ a) create a list of the dict's keys and values; 
             b) return the key with the max value"""  
         v=list(d.values())
@@ -80,16 +79,39 @@ class Database():
     def build_query(self, req_tables):
         query = ''
         if len(req_tables) == 1:
-            statement = ''
             for table, choices in req_tables.items():
-                statement += 'SELECT\n\t'
+                query += 'SELECT\n\t'
                 for choice in choices:
-                    statement += f'{choice}, '
-                statement = statement[:len(statement) - 2]
-                statement += f'\nFROM\n\t{table}'
-                print(statement)
+                    query += f'{choice}, '
+                query = query[:len(query) - 2]
+                query += f'\nFROM\n\t{table}'
         else: 
             joins = self.join([x for x in req_tables.keys()])
+            select = 'SELECT\n\t'
+            frm = '\nFROM\n\t'
+            where = ''
+            i = 0
+            keyword = '\nWHERE '
+            for table, choices in req_tables.items():
+                for choice in choices:
+                    select += f'{table}.{choice}, '
+                
+                frm += f'{table}, '
+            select = select[:len(select) - 2]
+            frm = frm[:len(frm) - 2]
+            for table1, container in joins.items():
+                for table2, common in container:
+                    if i == 1:
+                        keyword == '\nAND '
+                    else:
+                        i += 1
+                    where += keyword
+                    where += f'{table1.name}.{common} = {table2}.{common}'
+            query += select + frm + where
+        print('='*60)
+        print(query)
+        
+                    
             
 
     def join(self, tables):
@@ -120,16 +142,8 @@ class Database():
                             x = True
                             break
                 if not x:
-                    raise("no common shit found")
+                    raise(f"Nothing in common found for {table1}")
         return joins
-        """
-        for table1 in tables:
-            for table2 in tables:
-                table1.columns=set(table1.columns)
-                table2.columns=set(table2.columns)
-                t1_t2 = A.intersection(B)[0]
-
-        """
 
 class Table():
     def __init__(self, name, columns, database):
@@ -146,6 +160,8 @@ class Table():
             if column in table2.columns:
                 potential_join = column
                 break
+    def name(self):
+        return str(self.name)
 
 def create_app():
     root=Tk() #Creates the Window
@@ -199,43 +215,6 @@ class Lbox(Frame):
                         else:
                             choices_tables[choice].append(table)
             obj.get_req_tables(choices_tables)
-        
-        #print(options)
-        #self.joins(options)
-        
-    def joins(self, options):
-        joins = []
-        print(options[0])
-        dbs = list(set(options[x][0] for x in range(len(options))))
-        for i in range(len(options)):
-            print(i)
-            for col1 in table_ref[options[i][1]]: # table_ref[options[i][1]] -> table, for column in table
-                table1 = options[i][1]
-                print(f'col 1 - {col1}')
-                print(f'table 1 - {table1}')
-                for col2 in table_ref[options[i][1]]:
-                    table2 = options[i][1]
-                    print(f'col 2 - {col2}')
-                    print(f'table 2 - {table2}')
-                    print(f'choice - {options[i][2]}')
-                    if col1 == col2: # choice
-                        #joins.append(options[i])
-                        print('appended')
-                        joins.append((dbs[i], table2, options[i][2], col1))
-                        choices[options[i][2]].append(table1)
-                        
-                        
-        print(joins)
-        # Tally by table in joins, majority wins for that column
-        # Not sure that the tally count is correct, needs to count by joins[i][3]
-        tally = dict(Counter(joins))
-        print(tally)
-        count = list(tally.values())
-        location = list(tally.keys())
-        print(location[count.index(max(count))]) # need the matching table name
-        
-        
-        
 
 dwh1_db = Database('dwh1', dwh1)
 
