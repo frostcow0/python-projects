@@ -40,9 +40,48 @@ class Database():
             tables.append(Table(table, ref[table], self))
         return tables
 
+    def get_req_tables(self, choices_tables):
+        req_tables = {}
+        while len(choices_tables.keys())>0:
+            choices = [x for x in choices_tables.keys()]
+            table_score = self.build_table_score(choices_tables) #build_table_score(choices_tables)
+            table = self.keywithmaxval(table_score) # t1
+            for choice in choices:
+                if choice in table_ref[table]:
+                    del choices_tables[choice]
+                    if table not in req_tables:
+                        req_tables[table] = [choice]
+                    else:
+                        req_tables[table].append(choice)
+        for table, choices in req_tables.items():
+            print(table, choices)
+        self.build_query(req_tables)
 
-    def build_query(self):
+    def build_table_score(self, choices_tables):
+        table_score = {};
+        choices = choices_tables.keys()
+        for choice in choices:
+            tables = choices_tables[choice] # array of found_in_tables
+            for table in tables:
+                if table not in table_score.keys():
+                    table_score[table] = 1
+                else:
+                    table_score[table] += 1
+        return table_score
+
+    def keywithmaxval(self, d):
+        #print(f'incoming table_score - {table, choices}')
+        """ a) create a list of the dict's keys and values; 
+            b) return the key with the max value"""  
+        v=list(d.values())
+        k=list(d.keys())
+        return k[v.index(max(v))]
+
+    def build_query(self, req_tables):
         pass
+        for table, choices in req_tables.items():
+            if table.columns in table.columns.next():
+                print("yippe")
                     
 
 class Table():
@@ -60,70 +99,6 @@ class Table():
             if column in table2.columns:
                 potential_join = column
                 break
-
-
-
-dwh1_db = Database('dwh1', dwh1)
-
-db_ref = {
-        'dwh1': dwh1_db,
-        }
-
-table_ref = {}
-for db in db_ref.values():
-    for table in db.tables:
-        table_ref[table] = table.columns
-
-def build_table_score(choices_tables):
-    table_score = {};
-    choices = choices_tables.keys()
-    for choice in choices:
-        tables = choices_tables[choice] # array of found_in_tables
-        for table in tables:
-            if table not in table_score.keys():
-                table_score[table] = 1
-            else:
-                table_score[table] += 1
-    return table_score
-
-def build_score(tables, type='choice'):
-    score = {};
-    keys = tables.keys()
-    values = []
-    for key in keys:
-        if type == 'choice':
-            values = tables.columns # array of found_in_tables
-        else: values = tables.tables
-        for value in values:
-            if value not in score.keys():
-                score[value] = 1
-            else:
-                score[value] += 1
-    return score
-
-def get_req_tables(choices_tables): #
-    req_tables = {};
-    while len(choices_tables.keys())>0:
-        choices = [x for x in choices_tables.keys()]
-        table_score = build_table_score(choices_tables) #build_table_score(choices_tables)
-        table = keywithmaxval(table_score) # t1
-        for choice in choices:
-            if choice in table_ref[table]:
-                #choices.remove(choice)
-                del choices_tables[choice]
-                if choice not in req_tables:
-                    req_tables[table] = [choice]
-                else:
-                    req_tables[table].append(choice)
-    print(req_tables)
-
-def keywithmaxval(d):
-    #print(f'incoming table_score - {table, choices}')
-    """ a) create a list of the dict's keys and values; 
-        b) return the key with the max value"""  
-    v=list(d.values())
-    k=list(d.keys())
-    return k[v.index(max(v))]
 
 def create_app():
     root=Tk() #Creates the Window
@@ -165,46 +140,21 @@ class Lbox(Frame):
         return columns
         
     def get(self):
-        choices_tables = {};
-        choices_dbs = {};
-        for i in self.list.curselection():
-            choice = self.list.get(i)
-            for db in db_ref.keys():
+        for db in db_ref.keys():
+            obj = db_ref[db]
+            choices_tables = {};
+            for i in self.list.curselection():
+                choice = self.list.get(i)
                 for table in db_ref[db].tables:
-
                     if choice in table.columns:
                         if choice not in choices_tables.keys():
                             choices_tables[choice] = [table]
-                            choices_dbs[choice] = [db]
                         else:
                             choices_tables[choice].append(table)
-                            choices_dbs[choice].append(db)
-        
-        for db in db_ref.keys():
-            pass
-
-        self.get_req_tables(choices_tables)
+            obj.get_req_tables(choices_tables)
         
         #print(options)
         #self.joins(options)
-
-    def get_req_tables(self, choices_tables): #
-        req_tables = {};
-        while len(choices_tables.keys())>0:
-            choices = [x for x in choices_tables.keys()]
-            table_score = build_table_score(choices_tables) #build_table_score(choices_tables)
-            table = keywithmaxval(table_score) # t1
-            for choice in choices:
-                if choice in table_ref[table]:
-                    #choices.remove(choice)
-                    del choices_tables[choice]
-                    if choice not in req_tables:
-                        req_tables[table] = [choice]
-                    else:
-                        req_tables[table].append(choice)
-
-        for table, choices in req_tables.items():
-            print(table, choices)
         
     def joins(self, options):
         joins = []
@@ -239,5 +189,16 @@ class Lbox(Frame):
         
         
         
-        
+
+dwh1_db = Database('dwh1', dwh1)
+
+db_ref = {
+        'dwh1': dwh1_db,
+        }
+
+table_ref = {}
+for db in db_ref.values():
+    for table in db.tables:
+        table_ref[table] = table.columns
+
 create_app()
