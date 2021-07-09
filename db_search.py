@@ -93,7 +93,7 @@ class Database():
         del self.schema['ACES_CIRCUIT_COST']
         del self.schema['ACES_VENDOR_FILES']
         del self.schema['ADP_ROSTER_DATA_ALL']
-        #self.write_schema() #if we dont read, dont need write
+        self.write_schema() #if we dont read, dont need write
         self.exit_popup()
 
     def write_schema(self):
