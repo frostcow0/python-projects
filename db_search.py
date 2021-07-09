@@ -11,6 +11,7 @@ except ImportError:
 from collections import Counter, defaultdict
 import pandas
 import cx_Oracle
+import re
 
 title = 'Query Builder'
 
@@ -30,7 +31,7 @@ qcc1 = {
         }
 
 class Database():
-    def __init__(self, name, ref, host, port, tab_own):
+    def __init__(self, name, host, port, tab_own):
         self.name = name
         if self.name == 'dwh1':
             self.schema = 'PROD'
@@ -43,7 +44,9 @@ class Database():
         self.schema = defaultdict(list)
         self.unique_columns = []
         self.init_db_connection()
-        self.tables = self.build_tables(ref)
+        self.loading()
+
+        self.tables = self.build_tables()
         self.pop_unique_columns()
         db_ref[self.name] = self
 
@@ -52,9 +55,6 @@ class Database():
     def create_popup(self, query, option):
         root=Tk() #Creates the Window
         root.title(title) #Title at the Top
-        # root.lift()
-        # root.attributes('-topmost', True)
-        # root.attributes('-topmost', False)
         raise_to_front(root)
         app=Popup(root, query, option) #Runs Presser or Lbox
         root.mainloop()
@@ -64,7 +64,6 @@ class Database():
 
     def init_db_connection(self):
         self.login()
-        flag = False
         try:
             dsn_tns = cx_Oracle.makedsn(self.host, self.port, service_name = self.name )
             self.connection = cx_Oracle.connect(
@@ -72,21 +71,18 @@ class Database():
                 password = self.login_info[1],
                 dsn = dsn_tns)
             self.cursor = self.connection.cursor()
-        except IndexError:
-            flag = True
+        except IndexError: # Closed with no entry
+            quit()
         except Exception as error:
-            flag = True
             self.create_popup(f"Couldn't connect to the database. -- {repr(error)}", 1)
-        if not flag:
-            self.loading()
+            self.init_db_connection()
 
-    def load_schema(self):
+    def create_schema(self):
         query = f'''
-        select 
-            all_tables.table_name, all_tab_cols.column_name
-        from all_tables, all_tab_cols
-        where all_tables.owner = '{self.table_owner}'
-        and all_tables.owner = all_tab_cols.owner
+        select
+            table_name, column_name
+        from dba_tab_cols
+        where owner = '{self.table_owner}'
         order by table_name
         '''
         self.cursor.execute(query)
@@ -94,8 +90,34 @@ class Database():
         while row:
             self.schema[row[0]].append(row[1])
             row = self.cursor.fetchone()
+        del self.schema['ACES_CIRCUIT_COST']
+        del self.schema['ACES_VENDOR_FILES']
+        del self.schema['ADP_ROSTER_DATA_ALL']
+        #self.write_schema() #if we dont read, dont need write
         self.exit_popup()
-    
+
+    def write_schema(self):
+        with open(f"schemas/schema_{self.name.upper()}", "w") as file:
+            for table, columns in self.schema.items():
+                file.write(table+"\n")
+                for column in columns:
+                    file.write("\t"+column+"\n")
+
+    def read_schema(self): # much slower than just querying
+        pattern = re.compile(r'\s')
+        with open(f"schemas/schema_{self.name.upper()}") as file:
+            last_table = ''
+            while True:
+                content = file.readline()
+                if pattern.match(content):
+                    #print("column")
+                    self.schema[last_table].append(content.strip())
+                else:
+                    #print(content)
+                    last_table = content[:len(content)-2]
+                #print('='*60)
+                #print(self.schema)
+
     def pop_unique_columns(self):
         query = f'''
         select distinct
@@ -110,16 +132,30 @@ class Database():
             row = self.cursor.fetchone()
 
     def loading(self):
+        ref = {
+            'create_schema': self.create_schema,
+            'read_schema': self.read_schema,
+        }
+
+        # if f"schemas/schema_{self.name.upper()}":
+        #     message = f"Reading from schema_{self.name.upper()} . . ."
+        #     func = ref['read_schema']
+        # else: 
+        #     message = f"Loading from {self.name.upper()} . . ."
+        #     func = ref['create_schema']
+
+        message = f"Loading from {self.name.upper()} . . ."
+        func = ref['create_schema']    
         root = Tk()
         raise_to_front(root)
         root.title('Loading DB Schema')
-        root.geometry('300x50')
+        root.geometry('400x50')
         self.popup = root
         label = Label(root,
-                        text = f"Loading from {self.name.upper()} . . .",
-                        font = ("Verdana", 16))
+                        text = message,
+                        font = ("Verdana", 14))
         label.pack()
-        root.after(200, self.load_schema)
+        root.after(200, func)
         root.mainloop()
         
 
@@ -129,7 +165,7 @@ class Database():
         top_frame = Frame(root)
         bot_frame = Frame(root)
         
-        #root.geometry('300x100')
+        root.geometry('300x150')
         self.popup = root
 
         root.l0 = Label(root,
@@ -166,7 +202,7 @@ class Database():
         
         root.mainloop()
 
-    def get_login(self, obj):
+    def get_login(self, obj=0):
         self.login_info.append(self.popup.user.get())
         self.login_info.append(self.popup.passw.get())
         self.exit_popup()
@@ -178,7 +214,7 @@ class Database():
         data = self.cursor.execute(query)
         return data
 
-    def build_tables(self, ref):
+    def build_tables(self):
         tables = []
         for table, columns in self.schema.items():
             tables.append(Table(table, columns, self))
@@ -186,17 +222,20 @@ class Database():
 
     def get_req_tables(self, choices_tables):
         req_tables = {}
+        self.choice_table_key = {}
         while len(choices_tables.keys())>0:
             choices = [x for x in choices_tables.keys()]
             table_score = self.build_table_score(choices_tables) #build_table_score(choices_tables)
             table = self.keywithmaxval(table_score) # t1
             for choice in choices:
-                if choice in table_ref[table]:
+                if choice in self.tables[self.tables.index(table)].columns:
                     del choices_tables[choice]
                     if table not in req_tables:
-                        req_tables[table] = [choice]
+                        req_tables[table.name] = [choice]
+                        self.choice_table_key[choice] = table.name
                     else:
-                        req_tables[table].append(choice)
+                        req_tables[table.name].append(choice)
+                        self.choice_table_key[choice].append(table.name)
         self.build_query(req_tables)
 
     def build_table_score(self, choices_tables):
@@ -226,7 +265,7 @@ class Database():
                 for choice in choices:
                     query += f'{choice}, '
                 query = query[:len(query) - 2]
-                query += f'\nFROM\n\t{self.schema}.{table}'
+                query += f'\nFROM\n\t{self.table_owner}.{table}'
         else: 
             joins = self.join([x for x in req_tables.keys()])
             select = 'SELECT\n\t'
@@ -237,8 +276,7 @@ class Database():
             for table, choices in req_tables.items():
                 for choice in choices:
                     select += f'{table}.{choice}, '
-                
-                frm += f'{self.schema}.{table}, '
+                frm += f'{self.table_owner}.{table}, '
             select = select[:len(select) - 2]
             frm = frm[:len(frm) - 2]
             for table1, container in joins.items():
@@ -340,22 +378,15 @@ class Lbox(Frame):
         for column in self.columns:
             self.list.insert(END, column)
         self.yscrollbar.config(command = self.list.yview)
-    
-    # def unique_columns(self):
-    #     columns = []
-    #     for db in db_ref.values():
-    #         for table in db.tables:
-    #             columns = columns + list(set(table.columns)-set(columns))
-    #     return columns
         
     def get(self):
         for db in db_ref.keys():
             obj = db_ref[db]
             choices_tables = {};
             for i in self.list.curselection():
-                choice = self.list.get(i)
+                choice = self.list.get(i)[0]
                 for table in db_ref[db].tables:
-                    if choice[0] in table.columns:
+                    if choice in table.columns:
                         if choice not in choices_tables.keys():
                             choices_tables[choice] = [table]
                         else:
@@ -457,7 +488,7 @@ def raise_to_front(window):
 
 db_ref = {}
 
-dwh1 = Database('dwh1', 'dwh1', 'ora-tns-dwh1.in.qservco.com', 1521, 'PROD')
+dwh1 = Database('dwh1', 'ora-tns-dwh1.in.qservco.com', 1521, 'PROD')
 
 table_ref = {}
 for db in db_ref.values():
