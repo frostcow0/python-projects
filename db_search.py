@@ -8,52 +8,171 @@ try:
     from tkinter import *
 except ImportError:
     from Tkinter import *
-from collections import Counter
+from collections import Counter, defaultdict
 import pandas
 import cx_Oracle
 
-
+title = 'Query Builder'
 
 # Tables
 bp_subscriber_product = ['SUBSCRIBER_ID', 'SUBSCRIBER', 'feature_1', 'feature_2']
-bp_subscriber = ['SUBSCRIBER_ID', 'SUBSCRIBER', 'SUBSCRIBER_COMPANY_NAME', 'MARKET', 'BUSINESS_UNIT', 'SUSBCRIBER_STATUS', 'SUBSCRIBER_STATE',
+bp_subscriber = ['SUBSCRIBER_ID', 'SUBSCRIBER', 'SUBSCRIBER_COMPANY_NAME', 'MARKET', 'BUSINESS_UNIT', 'SUBSCRIBER_STATUS', 'SUBSCRIBER_STATE',
                 'SERVICE_COMBINATION', 'SERVICE_SET', 'SERVICE_START_DATE', 'SUBSCRIBER_END_DATE', 'BUILDING_TYPE']
 
 v_sub = ['sub_id', 'subscriber', 'market', 'mrkt_typ']
 # Databases
-dwh1 = {
-        'bp_subscriber': bp_subscriber,
-        'bp_subscriber_product': bp_subscriber_product,
-        }
+# dwh1 = {
+#         'bp_subscriber': bp_subscriber,
+#         'bp_subscriber_product': bp_subscriber_product,
+#         }
 qcc1 = {
         'v_sub': v_sub,
         }
 
 class Database():
-    def __init__(self, name, ref):
+    def __init__(self, name, ref, host, port, tab_own):
         self.name = name
-        self.tables = self.build_tables(ref)
+        if self.name == 'dwh1':
+            self.schema = 'PROD'
+        
+        self.host = host
+        self.port = port
+        self.table_owner = tab_own
+        self.login_info = []
+        self.cursor = None
+        self.schema = defaultdict(list)
+        self.unique_columns = []
         self.init_db_connection()
+        self.tables = self.build_tables(ref)
+        self.pop_unique_columns()
+        db_ref[self.name] = self
 
-    def create_popup(self, query):
+        create_app(1, self)
+
+    def create_popup(self, query, option):
         root=Tk() #Creates the Window
-        root.title('How do you want to Export?') #Title at the Top
-        app=Popup(root, query) #Runs Presser or Lbox
+        root.title(title) #Title at the Top
+        # root.lift()
+        # root.attributes('-topmost', True)
+        # root.attributes('-topmost', False)
+        raise_to_front(root)
+        app=Popup(root, query, option) #Runs Presser or Lbox
         root.mainloop()
 
     def __str__(self):
         return str(self.name)
 
     def init_db_connection(self):
+        self.login()
+        flag = False
         try:
-            dsn_tns = cx_Oracle.makedsn('HOSTNAME', 'PORTNUMBER', service_name = 'SERVICENAME', )
+            dsn_tns = cx_Oracle.makedsn(self.host, self.port, service_name = self.name )
             self.connection = cx_Oracle.connect(
-                user = "jmartin",
-                password = "", # put in later
+                user = self.login_info[0],
+                password = self.login_info[1],
                 dsn = dsn_tns)
             self.cursor = self.connection.cursor()
+        except IndexError:
+            flag = True
         except Exception as error:
-            print("Couldn't connect to the database. -- "+repr(error))
+            flag = True
+            self.create_popup(f"Couldn't connect to the database. -- {repr(error)}", 1)
+        if not flag:
+            self.loading()
+
+    def load_schema(self):
+        query = f'''
+        select 
+            all_tables.table_name, all_tab_cols.column_name
+        from all_tables, all_tab_cols
+        where all_tables.owner = '{self.table_owner}'
+        and all_tables.owner = all_tab_cols.owner
+        order by table_name
+        '''
+        self.cursor.execute(query)
+        row = self.cursor.fetchone()
+        while row:
+            self.schema[row[0]].append(row[1])
+            row = self.cursor.fetchone()
+        self.exit_popup()
+    
+    def pop_unique_columns(self):
+        query = f'''
+        select distinct
+            column_name
+        from all_tab_cols
+        where owner = '{self.table_owner}'
+        '''
+        self.cursor.execute(query)
+        row = self.cursor.fetchone()
+        while row:
+            self.unique_columns.append(row)
+            row = self.cursor.fetchone()
+
+    def loading(self):
+        root = Tk()
+        raise_to_front(root)
+        root.title('Loading DB Schema')
+        root.geometry('300x50')
+        self.popup = root
+        label = Label(root,
+                        text = f"Loading from {self.name.upper()} . . .",
+                        font = ("Verdana", 16))
+        label.pack()
+        root.after(200, self.load_schema)
+        root.mainloop()
+        
+
+    def login(self):
+        root = Tk()
+        root.title(title)
+        top_frame = Frame(root)
+        bot_frame = Frame(root)
+        
+        #root.geometry('300x100')
+        self.popup = root
+
+        root.l0 = Label(root,
+                   text = self.name.upper(),
+                   font = ('Veridian', 15),
+                   padx = 3, pady = 3)
+        root.l0.pack(side = TOP, fill = X)
+        top_frame.pack()
+        bot_frame.pack()
+        root.l1 = Label(root,
+                   text = 'Username :  ',
+                   font = ('Veridian', 12),
+                   padx = 3, pady = 10)
+        root.l1.pack(in_ = top_frame, side = LEFT)
+        root.l2 = Label(root,
+                   text = 'Password :  ',
+                   font = ('Veridian', 12),
+                   padx = 3, pady = 5)
+        root.l2.pack(in_ = bot_frame, side = LEFT)
+        root.user = Entry(root,
+                        width = 15)
+        root.user.pack(in_ = top_frame, side = RIGHT, fill = X)
+        root.passw = Entry(root,
+                        show = "*",
+                        width = 15)
+        root.passw.pack(in_ = bot_frame, side = RIGHT)
+        root.passw.bind('<Return>', self.get_login)
+        root.enter = Button(root,
+                  text = 'Enter',
+                  font = ('Veridian', 12),
+                  padx = 3, pady = 3,
+                  command = self.get_login)
+        root.enter.pack(side = BOTTOM)
+        
+        root.mainloop()
+
+    def get_login(self, obj):
+        self.login_info.append(self.popup.user.get())
+        self.login_info.append(self.popup.passw.get())
+        self.exit_popup()
+
+    def exit_popup(self):
+        self.popup.destroy()
 
     def execute_query(self, query):
         data = self.cursor.execute(query)
@@ -61,8 +180,8 @@ class Database():
 
     def build_tables(self, ref):
         tables = []
-        for table in ref.keys():
-            tables.append(Table(table, ref[table], self))
+        for table, columns in self.schema.items():
+            tables.append(Table(table, columns, self))
         return tables
 
     def get_req_tables(self, choices_tables):
@@ -107,7 +226,7 @@ class Database():
                 for choice in choices:
                     query += f'{choice}, '
                 query = query[:len(query) - 2]
-                query += f'\nFROM\n\t{table}'
+                query += f'\nFROM\n\t{self.schema}.{table}'
         else: 
             joins = self.join([x for x in req_tables.keys()])
             select = 'SELECT\n\t'
@@ -119,7 +238,7 @@ class Database():
                 for choice in choices:
                     select += f'{table}.{choice}, '
                 
-                frm += f'{table}, '
+                frm += f'{self.schema}.{table}, '
             select = select[:len(select) - 2]
             frm = frm[:len(frm) - 2]
             for table1, container in joins.items():
@@ -133,10 +252,9 @@ class Database():
             query += select + frm + where
         print('='*60)
         print(query)
-        self.create_popup(query)
+        self.create_popup(query, 0)
 
     def join(self, tables):
-        from collections import defaultdict
         joins = defaultdict(list)
         for i, table1 in enumerate(tables):
             if i == len(tables)-1:
@@ -163,6 +281,7 @@ class Database():
                             x = True
                             break
                 if not x:
+                    self.create_popup(f"Nothing in common found for {table1}", 1)
                     raise(f"Nothing in common found for {table1}")
         return joins
 
@@ -178,44 +297,56 @@ class Table():
     def name(self):
         return str(self.name)
 
-def create_app():
+def create_app(option, db):
     root=Tk() #Creates the Window
-    root.title('Query Builder') #Title at the Top
-    app=Lbox(root) #Runs Presser or Lbox
+    root.title(title) #Title at the Top
+    raise_to_front(root)
+    if option == 0:
+        root.geometry('200x100')
+    app=Lbox(root, option, db) #Runs Presser or Lbox
     root.mainloop() #Runs Tkinter (Doesn't run anything after this until the window is closed)
 
 class Lbox(Frame):
-    def __init__(self, master):
+    def __init__(self, master, option, db):
         Frame.__init__(self, master)
-        self.yscrollbar = Scrollbar(master)
+        self.db = db
+        self.option = option
+        if self.option == 0:
+            self.login()
+        elif self.option == 1:
+            self.choose_columns()
+        
+    def choose_columns(self):
+        self.pack()
+        self.yscrollbar = Scrollbar(self)
         self.yscrollbar.pack(side = RIGHT, fill = Y)
-        self.label = Label(master,
+        self.label = Label(self,
                    text = 'Select from the columns below :  ',
                    font = ('Veridian', 16),
                    padx = 3, pady = 3)
         self.label.pack()
-        self.list = Listbox(master, selectmode = 'multiple',
+        self.list = Listbox(self, selectmode = 'multiple',
                             yscrollcommand = self.yscrollbar.set)
         self.list.pack(padx = 10, pady = 10,
                   expand = YES, fill = 'both')
 
-        self.button = Button(master,
+        self.button = Button(self,
                   text = 'Enter',
                   font = ('Veridian', 12),
                   padx = 3, pady = 3,
                   command = self.get)
         self.button.pack()
-        self.columns = self.unique_columns()
+        self.columns = self.db.unique_columns
         for column in self.columns:
             self.list.insert(END, column)
         self.yscrollbar.config(command = self.list.yview)
     
-    def unique_columns(self):
-        columns = []
-        for db in db_ref.values():
-            for table in db.tables:
-                columns = columns + list(set(table.columns)-set(columns))
-        return columns
+    # def unique_columns(self):
+    #     columns = []
+    #     for db in db_ref.values():
+    #         for table in db.tables:
+    #             columns = columns + list(set(table.columns)-set(columns))
+    #     return columns
         
     def get(self):
         for db in db_ref.keys():
@@ -224,7 +355,7 @@ class Lbox(Frame):
             for i in self.list.curselection():
                 choice = self.list.get(i)
                 for table in db_ref[db].tables:
-                    if choice in table.columns:
+                    if choice[0] in table.columns:
                         if choice not in choices_tables.keys():
                             choices_tables[choice] = [table]
                         else:
@@ -232,29 +363,54 @@ class Lbox(Frame):
             obj.get_req_tables(choices_tables)
 
 class Popup(Frame):
-    def __init__(self, master, query):
+    def __init__(self, master, message, option):
         Frame.__init__(self, master)
-        self.query = query
+        self.root = master
+        self.message = message
+        self.option = option
+        
         self.pack()
-        self.place_buttons()
+        if self.option == 0:
+            self.place_buttons()
+        elif self.option == 1:
+            self.error()
+
+    def exit(self):
+        self.root.destroy()
+
+    def error(self):
+        self.pack()
+        self.lbl = Label(self,
+                    text = self.message,
+                    font = ('Veridian', 12),
+                    padx = 3, pady = 3)
+        self.lbl.pack()
+        self.button = Button(self,
+                    text = 'Exit',
+                    font = ('Veridian', 12),
+                    padx = 3, pady = 3,
+                    command = self.exit)
+        self.button.pack()
+
+        self.widgets = [self.lbl, self.button]
         
     def place_buttons(self):
         self.sql = Button(self,
                   text = 'SQL Query',
                   font = ('Veridian', 12),
-                  padx = 3, pady = 3,
+                  padx = 3, pady = 6,
                   command = self.export_sql_query)
         self.sql.pack()
         self.xlsx = Button(self,
                   text = 'Excel',
                   font = ('Veridian', 12),
-                  padx = 3, pady = 3,
+                  padx = 3, pady = 6,
                   command = self.export_xlsx)
         self.xlsx.pack()
         self.csv = Button(self,
                   text = 'CSV',
                   font = ('Veridian', 12),
-                  padx = 3, pady = 3,
+                  padx = 3, pady = 6,
                   command = self.export_xlsx)
         self.csv.pack()
 
@@ -281,7 +437,7 @@ class Popup(Frame):
                   command = self.back)
         self.back_button.pack()
 
-        self.text.insert(END, self.query)
+        self.text.insert(END, self.message)
 
         self.widgets = [self.text, self.back_button]
 
@@ -293,17 +449,17 @@ class Popup(Frame):
     def export_csv(self):
         for widget in self.widgets:
             widget.pack_forget()
-        pass
+            
+def raise_to_front(window):
+    window.lift()
+    window.attributes('-topmost', True)
+    window.attributes('-topmost', False)
 
-dwh1_db = Database('dwh1', dwh1)
+db_ref = {}
 
-db_ref = {
-        'dwh1': dwh1_db,
-        }
+dwh1 = Database('dwh1', 'dwh1', 'ora-tns-dwh1.in.qservco.com', 1521, 'PROD')
 
 table_ref = {}
 for db in db_ref.values():
     for table in db.tables:
         table_ref[table] = table.columns
-
-create_app()
