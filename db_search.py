@@ -65,6 +65,19 @@ class Database():
             self.cursor = self.connection.cursor()
         except IndexError: # Closed with no entry
             quit()
+        except cx_Oracle.DatabaseError as e:
+            error, = e.args
+            if error.code == 1403:
+                self.create_popup(f"No rows returned. Error code: {error.code}", 1)
+                self.init_db_connection()
+            elif error.code == 1017:
+                self.create_popup(f"Invalid login. Error code: {error.code}", 1)
+                self.init_db_connection()
+            elif error.code == 28000:
+                self.create_popup(f"Too many login attempts. Error code: {error.code}", 1)
+                quit()
+            else:
+                print(f"Un-caught error. Error code: {error.code}")
         except Exception as error:
             self.create_popup(f"Couldn't connect to the database. -- {repr(error)}", 1)
             self.init_db_connection()
@@ -175,6 +188,7 @@ class Database():
         root.user = Entry(root,
                         width = 15)
         root.user.pack(in_ = top_frame, side = RIGHT, fill = X)
+        root.user.focus_force()
         root.passw = Entry(root,
                         show = "*",
                         width = 15)
@@ -325,8 +339,6 @@ class Table():
 def create_app(option, db):
     root=Tk() #Creates the Window
     root.title(title) #Title at the Top
-    root.grab_set()
-    root.focus()
     raise_to_front(root)
     app=Lbox(root, option, db) #Runs Presser or Lbox
     root.mainloop() #Runs Tkinter (Doesn't run anything after this until the window is closed)
@@ -350,9 +362,10 @@ class Lbox(Frame):
             choices = 'databases'
             mode = 'single'
 
+        self.but_frame = Frame(self.root)
         self.pack()
         self.yscrollbar = Scrollbar(self)
-        self.yscrollbar.pack(side = RIGHT, fill = Y)
+        self.yscrollbar.pack(side = RIGHT, fill = BOTH)
         self.label = Label(self,
                    text = f'Select from the {choices} below :  ',
                    font = ('Veridian', 16),
@@ -361,20 +374,27 @@ class Lbox(Frame):
         self.list = Listbox(self, selectmode = mode,
                             yscrollcommand = self.yscrollbar.set)
         self.list.pack(padx = 10, pady = 10,
-                  expand = YES, fill = 'both')
+                  expand = YES, fill = BOTH)
+        self.list.focus_force()
 
         self.button = Button(self,
                   text = 'Enter',
                   font = ('Veridian', 12),
                   padx = 3, pady = 3,
                   command = self.get)
-        self.button.pack()
+        self.button.pack(side = RIGHT)
         if option == 0:
-            self.columns = self.db.unique_columns
+            self.columns = sorted(self.db.unique_columns)
             for column in self.columns:
                 self.list.insert(END, column)
         elif option == 1:
-            for db in self.db.keys():
+            self.refresh = Button(self,
+                            text = 'New TNS File',
+                            font = ('Veridian', 12),
+                            padx = 3, pady = 3,
+                            command = self.refresh_config)
+            self.refresh.pack(side = LEFT)
+            for db in sorted(self.db.keys()):
                 self.list.insert(END, db)
         self.yscrollbar.config(command = self.list.yview)
         
@@ -397,8 +417,11 @@ class Lbox(Frame):
             self.root.destroy()
             config.db_info = [choice, databases[choice]]
             owner_popup(f'Set Up {choice}')
-            print(config.db_info)
-            
+    
+    def refresh_config(self):
+        self.root.destroy()
+        setup_config()
+        config.write_config()
 
 class Popup(Frame):
     def __init__(self, master, message, option):
@@ -430,6 +453,7 @@ class Popup(Frame):
                     width = 20)
         self.entry.pack()
         self.entry.bind('<Return>', self.owner_get)
+        self.entry.focus_force()
         self.button = Button(self,
                     text = 'Enter',
                     font = ('Veridian', 12),
@@ -461,8 +485,7 @@ class Popup(Frame):
                     font = ('Veridian', 10),
                     padx = 3, pady = 3).pack(
                             in_ = self.top_frame,
-                            side = LEFT
-                    )
+                            side = LEFT)
         self.path = Entry(self,
                     width = 30)
         self.path.pack(
@@ -479,6 +502,7 @@ class Popup(Frame):
         tnsnames_file = self.path.get()
         if path.exists(tnsnames_file):
             self.exit()
+            config.tns_file = tnsnames_file
             read_tnsnames(tnsnames_file)
         else:
             self.exit()
@@ -603,21 +627,20 @@ class Config():
         self.file = "settings/config.txt"
         self.db = None
         self.db_info = None
-        #self.read_config()
+        self.tns_file = None
 
     def read_config(self):
         with open(self.file) as file:
-            pass
+            contents = file.read()
+            contents = contents.split('&')
+            del contents[0] # empty space from first &
+            self.tns_file = contents[0]
 
     def write_config(self):
         with open(self.file, "w") as file:
-            content = ''
-            for db in databases.keys():
-                content += f'&{db}-{databases[db]}'
+            file.write(f'&{config.tns_file}')
 
     def create_db(self, owner):
-        print(self.db_info)
-        print(owner)
         self.db = Database(self.db_info[0], self.db_info[1][0], self.db_info[1][1], owner)
 
 def setup_config():
@@ -637,11 +660,11 @@ def owner_popup(title):
 
 def init():
     if path.exists(config.file):
-        print('found')
-        dbs = {}
+        config.read_config()
+        read_tnsnames(config.tns_file)
     else:
         setup_config()
-        
+        config.write_config()
         
 config = Config()
 db_ref = {}
@@ -650,10 +673,3 @@ init()
 
 #C:\app\client\Administrator\product\18.0.0\client_1\network\admin\tnsnames.ora
 quit()
-
-dwh1 = Database('dwh1', 'ora-tns-dwh1.in.qservco.com', 1521, 'PROD')
-
-table_ref = {}
-for db in db_ref.values():
-    for table in db.tables:
-        table_ref[table] = table.columns
