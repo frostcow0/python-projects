@@ -12,33 +12,25 @@ from collections import Counter, defaultdict
 import pandas
 import cx_Oracle
 import re
+from os import path
+
+'''
+This script assumes similar tnsnames.ora structure, as well as an
+Oracle database.
+'''
 
 title = 'Query Builder'
+databases = {}
 
-# Tables
-bp_subscriber_product = ['SUBSCRIBER_ID', 'SUBSCRIBER', 'feature_1', 'feature_2']
-bp_subscriber = ['SUBSCRIBER_ID', 'SUBSCRIBER', 'SUBSCRIBER_COMPANY_NAME', 'MARKET', 'BUSINESS_UNIT', 'SUBSCRIBER_STATUS', 'SUBSCRIBER_STATE',
-                'SERVICE_COMBINATION', 'SERVICE_SET', 'SERVICE_START_DATE', 'SUBSCRIBER_END_DATE', 'BUILDING_TYPE']
+#tnsnames_file = "C:/app/client/Administrator/product/18.0.0/client_1/network/admin/tnsnames.ora"
 
-v_sub = ['sub_id', 'subscriber', 'market', 'mrkt_typ']
-# Databases
-# dwh1 = {
-#         'bp_subscriber': bp_subscriber,
-#         'bp_subscriber_product': bp_subscriber_product,
-#         }
-qcc1 = {
-        'v_sub': v_sub,
-        }
 
 class Database():
     def __init__(self, name, host, port, tab_own):
         self.name = name
-        if self.name == 'dwh1':
-            self.schema = 'PROD'
-        
         self.host = host
         self.port = port
-        self.table_owner = tab_own
+        self.table_owner = tab_own.upper()  
         self.login_info = []
         self.cursor = None
         self.schema = defaultdict(list)
@@ -50,7 +42,7 @@ class Database():
         self.pop_unique_columns()
         db_ref[self.name] = self
 
-        create_app(1, self)
+        create_app(0, self)
 
     def create_popup(self, query, option):
         root=Tk() #Creates the Window
@@ -90,10 +82,7 @@ class Database():
         while row:
             self.schema[row[0]].append(row[1])
             row = self.cursor.fetchone()
-        del self.schema['ACES_CIRCUIT_COST']
-        del self.schema['ACES_VENDOR_FILES']
-        del self.schema['ADP_ROSTER_DATA_ALL']
-        self.write_schema() #if we dont read, dont need write
+        #self.write_schema() #if we dont read, dont need write
         self.exit_popup()
 
     def write_schema(self):
@@ -110,13 +99,9 @@ class Database():
             while True:
                 content = file.readline()
                 if pattern.match(content):
-                    #print("column")
                     self.schema[last_table].append(content.strip())
                 else:
-                    #print(content)
                     last_table = content[:len(content)-2]
-                #print('='*60)
-                #print(self.schema)
 
     def pop_unique_columns(self):
         query = f'''
@@ -147,6 +132,7 @@ class Database():
         message = f"Loading from {self.name.upper()} . . ."
         func = ref['create_schema']    
         root = Tk()
+        root.focus()
         raise_to_front(root)
         root.title('Loading DB Schema')
         root.geometry('400x50')
@@ -157,10 +143,11 @@ class Database():
         label.pack()
         root.after(200, func)
         root.mainloop()
-        
 
     def login(self):
         root = Tk()
+        root.focus()
+        raise_to_front(root)
         root.title(title)
         top_frame = Frame(root)
         bot_frame = Frame(root)
@@ -202,7 +189,7 @@ class Database():
         
         root.mainloop()
 
-    def get_login(self, obj=0):
+    def get_login(self, obj = 0):
         self.login_info.append(self.popup.user.get())
         self.login_info.append(self.popup.passw.get())
         self.exit_popup()
@@ -338,32 +325,40 @@ class Table():
 def create_app(option, db):
     root=Tk() #Creates the Window
     root.title(title) #Title at the Top
+    root.grab_set()
+    root.focus()
     raise_to_front(root)
-    if option == 0:
-        root.geometry('200x100')
     app=Lbox(root, option, db) #Runs Presser or Lbox
     root.mainloop() #Runs Tkinter (Doesn't run anything after this until the window is closed)
 
 class Lbox(Frame):
     def __init__(self, master, option, db):
         Frame.__init__(self, master)
+        self.root = master
         self.db = db
         self.option = option
         if self.option == 0:
-            self.login()
+            self.choose(0)
         elif self.option == 1:
-            self.choose_columns()
-        
-    def choose_columns(self):
+            self.choose(1)
+
+    def choose(self, option):
+        if option == 0:
+            choices = 'columns'
+            mode = 'multiple'
+        elif option == 1:
+            choices = 'databases'
+            mode = 'single'
+
         self.pack()
         self.yscrollbar = Scrollbar(self)
         self.yscrollbar.pack(side = RIGHT, fill = Y)
         self.label = Label(self,
-                   text = 'Select from the columns below :  ',
+                   text = f'Select from the {choices} below :  ',
                    font = ('Veridian', 16),
                    padx = 3, pady = 3)
         self.label.pack()
-        self.list = Listbox(self, selectmode = 'multiple',
+        self.list = Listbox(self, selectmode = mode,
                             yscrollcommand = self.yscrollbar.set)
         self.list.pack(padx = 10, pady = 10,
                   expand = YES, fill = 'both')
@@ -374,24 +369,36 @@ class Lbox(Frame):
                   padx = 3, pady = 3,
                   command = self.get)
         self.button.pack()
-        self.columns = self.db.unique_columns
-        for column in self.columns:
-            self.list.insert(END, column)
+        if option == 0:
+            self.columns = self.db.unique_columns
+            for column in self.columns:
+                self.list.insert(END, column)
+        elif option == 1:
+            for db in self.db.keys():
+                self.list.insert(END, db)
         self.yscrollbar.config(command = self.list.yview)
         
     def get(self):
-        for db in db_ref.keys():
-            obj = db_ref[db]
-            choices_tables = {};
-            for i in self.list.curselection():
-                choice = self.list.get(i)[0]
-                for table in db_ref[db].tables:
-                    if choice in table.columns:
-                        if choice not in choices_tables.keys():
-                            choices_tables[choice] = [table]
-                        else:
-                            choices_tables[choice].append(table)
-            obj.get_req_tables(choices_tables)
+        if self.option == 0:
+            for db in db_ref.keys():
+                obj = db_ref[db]
+                choices_tables = {};
+                for i in self.list.curselection():
+                    choice = self.list.get(i)[0]
+                    for table in db_ref[db].tables:
+                        if choice in table.columns:
+                            if choice not in choices_tables.keys():
+                                choices_tables[choice] = [table]
+                            else:
+                                choices_tables[choice].append(table)
+                obj.get_req_tables(choices_tables)
+        elif self.option == 1:
+            choice = self.list.get(ANCHOR)
+            self.root.destroy()
+            config.db_info = [choice, databases[choice]]
+            owner_popup(f'Set Up {choice}')
+            print(config.db_info)
+            
 
 class Popup(Frame):
     def __init__(self, master, message, option):
@@ -405,9 +412,83 @@ class Popup(Frame):
             self.place_buttons()
         elif self.option == 1:
             self.error()
+        elif self.option == 2:
+            self.setup()
+        elif self.option == 3:
+            self.tab_owner()
 
-    def exit(self):
+    def exit(self, extra = None):
         self.root.destroy()
+
+    def tab_owner(self):
+        self.pack()
+        self.label = Label(self,
+                    text = 'Who\'s the table owner? ex. PROD :  ',
+                    font = ('Veridian', 12),
+                    padx = 3, pady = 3).pack()
+        self.entry = Entry(self,
+                    width = 20)
+        self.entry.pack()
+        self.entry.bind('<Return>', self.owner_get)
+        self.button = Button(self,
+                    text = 'Enter',
+                    font = ('Veridian', 12),
+                    padx = 3, pady = 3,
+                    command = self.owner_get).pack()
+    
+    def owner_get(self, obj = 0):
+        owner = self.entry.get()
+        self.exit()
+        if not owner:
+            owner_popup('Must choose a table owner')
+            return
+        config.create_db(owner)
+
+    def setup(self):
+        self.pack()
+        self.label = Label(self,
+                    text = self.message,
+                    font = ('Veridian', 12),
+                    padx = 3, pady = 3).pack() #easier to pack this way
+
+        self.top_frame = Frame(self)
+        self.bot_frame = Frame(self)
+        self.top_frame.pack()
+        self.bot_frame.pack()
+
+        self.tns = Label(self,
+                    text = 'TNSNAMES.ORA Path :  ',
+                    font = ('Veridian', 10),
+                    padx = 3, pady = 3).pack(
+                            in_ = self.top_frame,
+                            side = LEFT
+                    )
+        self.path = Entry(self,
+                    width = 30)
+        self.path.pack(
+            in_ = self.top_frame,
+            side = RIGHT) # Have to pack separate when binding
+        self.path.bind('<Return>', self.setup_get)
+        self.button = Button(self,
+                    text = 'Enter',
+                    font = ('Veridian', 12),
+                    padx = 3, pady = 3,
+                    command = self.setup_get).pack()
+
+    def setup_get(self, obj = 0):
+        tnsnames_file = self.path.get()
+        if path.exists(tnsnames_file):
+            self.exit()
+            read_tnsnames(tnsnames_file)
+        else:
+            self.exit()
+            root = Tk()
+            root.focus()
+            root.title('File doesn\'t exist')
+            raise_to_front(root)
+            app = Popup(root, 'File doesn\'t exist.', 1)
+            root.mainloop()
+            setup_config()
 
     def error(self):
         self.pack()
@@ -486,7 +567,89 @@ def raise_to_front(window):
     window.attributes('-topmost', True)
     window.attributes('-topmost', False)
 
+def read_tnsnames(file):
+    with open (file) as f:
+        global databases
+        message = f.readlines()
+        dbs = {}
+        db_flag = False
+        host = port = sid = ''
+        for line in message:
+            line = line.lower()
+            line = line.split('(')
+            for split in line:
+                if 'tcp-loopback' in split:
+                    continue
+                if split[0] == '#' or split == '\n':
+                    db_flag = True
+                    continue
+                if db_flag == True:
+                    if 'host' in split:
+                        host = line[3][7:].strip(')')
+                    if 'port' in split:
+                        port = line[4].strip('port = ').strip('))\n')
+                    if 'service_name' in split or 'sid' in split:
+                        temp = line[1].split(' ')
+                        sid = temp[2].strip(')\n')
+                        dbs[sid] = [host, port]
+                        db_flag = False
+        if 'orcl' in dbs.keys():
+            del dbs['orcl']
+        databases = dbs # For accessing elsewhere
+        create_app(1, dbs)
+
+class Config():
+    def __init__(self):
+        self.file = "settings/config.txt"
+        self.db = None
+        self.db_info = None
+        #self.read_config()
+
+    def read_config(self):
+        with open(self.file) as file:
+            pass
+
+    def write_config(self):
+        with open(self.file, "w") as file:
+            content = ''
+            for db in databases.keys():
+                content += f'&{db}-{databases[db]}'
+
+    def create_db(self, owner):
+        print(self.db_info)
+        print(owner)
+        self.db = Database(self.db_info[0], self.db_info[1][0], self.db_info[1][1], owner)
+
+def setup_config():
+    root = Tk()
+    root.focus()
+    root.title('Set Up Config')
+    raise_to_front(root)
+    app = Popup(root, 'First Time Setup', 2)
+    root.mainloop()
+
+def owner_popup(title):
+    root = Tk()
+    root.title(title)
+    raise_to_front(root)
+    app = Popup(root, 'First Time Setup', 3)
+    root.mainloop()
+
+def init():
+    if path.exists(config.file):
+        print('found')
+        dbs = {}
+    else:
+        setup_config()
+        
+        
+config = Config()
 db_ref = {}
+
+init()
+
+#C:\app\client\Administrator\product\18.0.0\client_1\network\admin\tnsnames.ora
+quit()
 
 dwh1 = Database('dwh1', 'ora-tns-dwh1.in.qservco.com', 1521, 'PROD')
 
