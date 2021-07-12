@@ -24,7 +24,6 @@ databases = {}
 
 #tnsnames_file = "C:/app/client/Administrator/product/18.0.0/client_1/network/admin/tnsnames.ora"
 
-
 class Database():
     def __init__(self, name, host, port, tab_own):
         self.name = name
@@ -48,7 +47,7 @@ class Database():
         root=Tk() #Creates the Window
         root.title(title) #Title at the Top
         raise_to_front(root)
-        app=Popup(root, query, option) #Runs Presser or Lbox
+        app=Popup(root, query, option) #Runs Popup or Lbox
         root.mainloop()
 
     def __str__(self):
@@ -90,11 +89,20 @@ class Database():
         where owner = '{self.table_owner}'
         order by table_name
         '''
-        self.cursor.execute(query)
-        row = self.cursor.fetchone()
-        while row:
-            self.schema[row[0]].append(row[1])
+        try:
+            self.cursor.execute(query)
             row = self.cursor.fetchone()
+            while row:
+                self.schema[row[0]].append(row[1])
+                row = self.cursor.fetchone()
+        except cx_Oracle.DatabaseError as e:
+            error, = e.args
+            if error.code == 942:
+                self.loading.destroy()
+                self.create_popup(f"Schema query failed. Use a different DB. Error code: {error.code}", 1)
+                init()
+            else:
+                print(f"Un-caught error. Error code: {error.code}")
         #self.write_schema() #if we dont read, dont need write
         self.exit_popup()
 
@@ -144,22 +152,20 @@ class Database():
 
         message = f"Loading from {self.name.upper()} . . ."
         func = ref['create_schema']    
-        root = Tk()
-        root.focus()
+        self.loading = root = Tk()
         raise_to_front(root)
         root.title('Loading DB Schema')
         root.geometry('400x50')
         self.popup = root
         label = Label(root,
-                        text = message,
-                        font = ("Verdana", 14))
+                text = message,
+                font = ("Verdana", 14))
         label.pack()
         root.after(200, func)
         root.mainloop()
 
     def login(self):
         root = Tk()
-        root.focus()
         raise_to_front(root)
         root.title(title)
         top_frame = Frame(root)
@@ -362,7 +368,6 @@ class Lbox(Frame):
             choices = 'databases'
             mode = 'single'
 
-        self.but_frame = Frame(self.root)
         self.pack()
         self.yscrollbar = Scrollbar(self)
         self.yscrollbar.pack(side = RIGHT, fill = BOTH)
@@ -371,23 +376,37 @@ class Lbox(Frame):
                    font = ('Veridian', 16),
                    padx = 3, pady = 3)
         self.label.pack()
-        self.list = Listbox(self, selectmode = mode,
+        self.list_all = Listbox(self, selectmode = mode,
                             yscrollcommand = self.yscrollbar.set)
-        self.list.pack(padx = 10, pady = 10,
-                  expand = YES, fill = BOTH)
-        self.list.focus_force()
-
+        self.list_all.pack(padx = 10, pady = 10,
+                  expand = YES, fill = BOTH, side = LEFT)
+        self.list_all.focus_force()
         self.button = Button(self,
                   text = 'Enter',
                   font = ('Veridian', 12),
                   padx = 3, pady = 3,
                   command = self.get)
-        self.button.pack(side = RIGHT)
         if option == 0:
+            self.list_selected = Listbox(self, selectmode = mode,
+                            yscrollcommand = self.yscrollbar.set)
+            self.list_all.pack(padx = 10, pady = 10,
+                  expand = YES, fill = BOTH, side = RIGHT)
+            self.add = Button(self,
+                  text = 'Add',
+                  font = ('Veridian', 12),
+                  padx = 3, pady = 3,
+                  command = self.add).pack(side = LEFT)
+            self.rem = Button(self,
+                  text = 'Remove',
+                  font = ('Veridian', 12),
+                  padx = 3, pady = 3,
+                  command = self.rem).pack(side = RIGHT)
+            self.button.pack()
             self.columns = sorted(self.db.unique_columns)
             for column in self.columns:
-                self.list.insert(END, column)
+                self.list_all.insert(END, column)
         elif option == 1:
+            self.button.pack()
             self.refresh = Button(self,
                             text = 'New TNS File',
                             font = ('Veridian', 12),
@@ -395,16 +414,28 @@ class Lbox(Frame):
                             command = self.refresh_config)
             self.refresh.pack(side = LEFT)
             for db in sorted(self.db.keys()):
-                self.list.insert(END, db)
-        self.yscrollbar.config(command = self.list.yview)
+                self.list_all.insert(END, db)
+        self.yscrollbar.config(command = self.list_all.yview)
+
+    def add(self):
+        for i in sorted(self.list_all.curselection()):
+            choice = self.list_all.get(i)
+            self.list_selected.insert(END, choice)
+            self.list_all.delete(i)
+
+    def rem(self):
+        for i in sorted(self.list_selected.curselection()):
+            choice = self.list_all.get(i)
+            self.list_selected.delete(i)
+            self.list_all.insert(END, choice)
         
     def get(self):
         if self.option == 0:
             for db in db_ref.keys():
                 obj = db_ref[db]
                 choices_tables = {};
-                for i in self.list.curselection():
-                    choice = self.list.get(i)[0]
+                for i in self.list_selected.curselection():
+                    choice = self.list_selected.get(i)[0]
                     for table in db_ref[db].tables:
                         if choice in table.columns:
                             if choice not in choices_tables.keys():
@@ -413,7 +444,7 @@ class Lbox(Frame):
                                 choices_tables[choice].append(table)
                 obj.get_req_tables(choices_tables)
         elif self.option == 1:
-            choice = self.list.get(ANCHOR)
+            choice = self.list_all.get(ANCHOR)
             self.root.destroy()
             config.db_info = [choice, databases[choice]]
             owner_popup(f'Set Up {choice}')
@@ -507,7 +538,6 @@ class Popup(Frame):
         else:
             self.exit()
             root = Tk()
-            root.focus()
             root.title('File doesn\'t exist')
             raise_to_front(root)
             app = Popup(root, 'File doesn\'t exist.', 1)
@@ -645,7 +675,6 @@ class Config():
 
 def setup_config():
     root = Tk()
-    root.focus()
     root.title('Set Up Config')
     raise_to_front(root)
     app = Popup(root, 'First Time Setup', 2)
