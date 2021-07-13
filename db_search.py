@@ -9,9 +9,10 @@ try:
 except ImportError:
     from Tkinter import *
 from collections import Counter, defaultdict
-import pandas
+import pandas as pd
 import cx_Oracle
 import re
+from datetime import datetime
 from os import name, path
 
 '''
@@ -105,14 +106,14 @@ class Database():
         #self.write_schema() #if we dont read, dont need write
         self.exit_popup()
 
-    def write_schema(self):
+    def write_schema(self): # deprecated
         with open(f"schemas/schema_{self.name.upper()}", "w") as file:
             for table, columns in self.schema.items():
                 file.write(table+"\n")
                 for column in columns:
                     file.write("\t"+column+"\n")
 
-    def read_schema(self): # much slower than just querying
+    def read_schema(self): # much slower than just querying - deprecated
         pattern = re.compile(r'\s')
         with open(f"schemas/schema_{self.name.upper()}") as file:
             last_table = ''
@@ -231,9 +232,7 @@ class Database():
         req_tables = {}
         # self.choice_table_key = {}
         while len(choices_tables.keys())>0:
-            print('-'*30+' starting while loop')
             choices = [x for x in choices_tables.keys()]
-            print('choices - {0}'.format(choices))
             table_score = self.build_table_score(choices_tables) #build_table_score(choices_tables)
             table = self.keywithmaxval(table_score) # t1
             for choice in choices:
@@ -244,9 +243,6 @@ class Database():
                         # self.choice_table_key[choice] = table.name
                     else:
                         req_tables[table].append(choice)
-                    print('added {0} to req tables'.format(choice))
-                    print('req tables - {0}'.format(req_tables))
-                    print('='*60)
                         # self.choice_table_key[choice].append(table.name)
         self.build_query(req_tables)
 
@@ -271,7 +267,6 @@ class Database():
 
     def build_query(self, req_tables):
         query = ''
-        print(req_tables)
         if len(req_tables) == 1:
             for table, choices in req_tables.items():
                 query += 'SELECT\n\t'
@@ -311,8 +306,6 @@ class Database():
             if i == len(tables)-1:
                 break
             for j, table2 in enumerate(tables[i+1:]):
-                # print(table1)
-                # print(table2)
                 t1 = set(self.tables[self.tables.index(table1)].columns)
                 t2 = set(self.tables[self.tables.index(table2)].columns)
                 print(t1, t2)
@@ -361,8 +354,6 @@ def create_app(option, db):
     root=Tk() #Creates the Window
     root.title(title) #Title at the Top
     raise_to_front(root)
-    # if option == 0:
-    #     root.geometry('600x800')
     app=Lbox(root, option, db) #Runs Presser or Lbox
     root.mainloop() #Runs Tkinter (Doesn't run anything after this until the window is closed)
 
@@ -381,6 +372,15 @@ class Lbox(Frame):
         if option == 0:
             choices = 'columns'
             mode = 'multiple'
+            self.search_var = StringVar()
+            self.search_var.trace('w', lambda name, index, mode: self.update_list())
+            self.search_lab = Label(self,
+                        text = 'Search',
+                        font = ('Veridian', 10),
+                        padx = 3, pady = 3)
+            self.search_bar = Entry(self,
+                        textvariable = self.search_var,
+                        width = 15)
         elif option == 1:
             choices = 'databases'
             mode = 'single'
@@ -393,8 +393,11 @@ class Lbox(Frame):
                    font = ('Veridian', 16),
                    padx = 3, pady = 3)
         self.label.pack()
+        if option == 0:
+            self.search_lab.pack()
+            self.search_bar.pack()
         self.list_all = Listbox(self, selectmode = mode,
-                            yscrollcommand = self.yscrollbar.set)
+                        yscrollcommand = self.yscrollbar.set)
         self.list_all.pack(padx = 10, pady = 10,
                   expand = YES, fill = BOTH, side = LEFT)
         self.list_all.focus_force()
@@ -437,6 +440,12 @@ class Lbox(Frame):
             self.list_all.activate(0)
         self.yscrollbar.config(command = self.list_all.yview)
 
+    def update_list(self):
+        self.list_all.delete(0, END)
+        for item in self.columns:
+            if self.search_var.get().lower() in item[0].lower():
+                self.list_all.insert(END, item)
+
     def add(self):
         for i in sorted(self.list_all.curselection()):
             choice = self.list_all.get(i)
@@ -460,8 +469,6 @@ class Lbox(Frame):
                         if choice in table.columns:
                             if choice not in choices_tables.keys():
                                 choices_tables[choice] = [table]
-                                # print(table)
-                                # print(obj.tables[obj.tables.index(table)])
                             else:
                                 choices_tables[choice].append(table)
                 obj.get_req_tables(choices_tables)
@@ -469,7 +476,7 @@ class Lbox(Frame):
             choice = self.list_all.get(ANCHOR)
             self.root.destroy()
             config.db_info = [choice, databases[choice]]
-            if config.dbs[choice]:
+            if choice in config.dbs:
                 config.create_db(config.dbs[choice])
             else:
                 owner_popup(f'Set Up {choice}')
@@ -633,9 +640,20 @@ class Popup(Frame):
         self.widgets = [self.text, self.back_button]
 
     def export_xlsx(self):
+        
+        self.message+='\nWHERE ROWNUM <= 30'
         for widget in self.widgets:
             widget.pack_forget()
-        pass
+        self.root.geometry('500x50')
+        for db in db_ref.keys():
+            db_obj = db_ref[db]
+            df = pd.read_sql(self.message, db_obj.connection)
+        today = datetime.today().strftime('%Y-%m-%d')
+        filename = f'{db_obj.name}_query-{today}.xlsx'
+        df.to_excel(filename, index = False)
+        self.label = Label(self,
+                text = f'Exported {db_obj.name} to {filename}',
+                font = ("Verdana", 14)).pack()
 
     def export_csv(self):
         for widget in self.widgets:
@@ -674,7 +692,7 @@ def read_tnsnames(file):
                         db_flag = False
         if 'orcl' in dbs.keys():
             del dbs['orcl']
-        databases = dbs # For accessing elsewhere
+        databases = dbs
         create_app(1, dbs)
 
 class Config():
@@ -683,6 +701,7 @@ class Config():
         self.dbs = {}
         self.db_info = None
         self.tns_file = None
+        self.db = None
 
     def read_config(self):
         with open(self.file) as file:
