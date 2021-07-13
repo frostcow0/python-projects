@@ -12,7 +12,7 @@ from collections import Counter, defaultdict
 import pandas
 import cx_Oracle
 import re
-from os import path
+from os import name, path
 
 '''
 This script assumes similar tnsnames.ora structure, as well as an
@@ -22,15 +22,12 @@ Oracle database.
 title = 'Query Builder'
 databases = {}
 
-#tnsnames_file = "C:/app/client/Administrator/product/18.0.0/client_1/network/admin/tnsnames.ora"
-
 class Database():
     def __init__(self, name, host, port, tab_own):
         self.name = name
         self.host = host
         self.port = port
         self.table_owner = tab_own.upper()  
-        self.login_info = []
         self.cursor = None
         self.schema = defaultdict(list)
         self.unique_columns = []
@@ -54,6 +51,7 @@ class Database():
         return str(self.name)
 
     def init_db_connection(self):
+        self.login_info = []
         self.login()
         try:
             dsn_tns = cx_Oracle.makedsn(self.host, self.port, service_name = self.name )
@@ -87,6 +85,7 @@ class Database():
             table_name, column_name
         from dba_tab_cols
         where owner = '{self.table_owner}'
+        and avg_col_len > 0
         order by table_name
         '''
         try:
@@ -130,6 +129,7 @@ class Database():
             column_name
         from all_tab_cols
         where owner = '{self.table_owner}'
+        and avg_col_len > 0
         '''
         self.cursor.execute(query)
         row = self.cursor.fetchone()
@@ -229,20 +229,25 @@ class Database():
 
     def get_req_tables(self, choices_tables):
         req_tables = {}
-        self.choice_table_key = {}
+        # self.choice_table_key = {}
         while len(choices_tables.keys())>0:
+            print('-'*30+' starting while loop')
             choices = [x for x in choices_tables.keys()]
+            print('choices - {0}'.format(choices))
             table_score = self.build_table_score(choices_tables) #build_table_score(choices_tables)
             table = self.keywithmaxval(table_score) # t1
             for choice in choices:
                 if choice in self.tables[self.tables.index(table)].columns:
                     del choices_tables[choice]
                     if table not in req_tables:
-                        req_tables[table.name] = [choice]
-                        self.choice_table_key[choice] = table.name
+                        req_tables[table] = [choice]
+                        # self.choice_table_key[choice] = table.name
                     else:
-                        req_tables[table.name].append(choice)
-                        self.choice_table_key[choice].append(table.name)
+                        req_tables[table].append(choice)
+                    print('added {0} to req tables'.format(choice))
+                    print('req tables - {0}'.format(req_tables))
+                    print('='*60)
+                        # self.choice_table_key[choice].append(table.name)
         self.build_query(req_tables)
 
     def build_table_score(self, choices_tables):
@@ -266,6 +271,7 @@ class Database():
 
     def build_query(self, req_tables):
         query = ''
+        print(req_tables)
         if len(req_tables) == 1:
             for table, choices in req_tables.items():
                 query += 'SELECT\n\t'
@@ -305,7 +311,13 @@ class Database():
             if i == len(tables)-1:
                 break
             for j, table2 in enumerate(tables[i+1:]):
-                common = list(set(table1.columns).intersection(set(table2.columns)))
+                # print(table1)
+                # print(table2)
+                t1 = set(self.tables[self.tables.index(table1)].columns)
+                t2 = set(self.tables[self.tables.index(table2)].columns)
+                print(t1, t2)
+                common = list(set(self.tables[self.tables.index(table1)].columns).intersection(
+                            set(self.tables[self.tables.index(table2)].columns)))
                 if common:
                     joins[table1].append((table2, common[0]))
             if not joins[table1]:
@@ -318,8 +330,10 @@ class Database():
                     for k, table3 in enumerate(self.tables):
                         if table3 == table1 or table3 == table2:
                             continue
-                        common1 = list(set(table1.columns).intersection(set(table3.columns)))
-                        common2 = list(set(table2.columns).intersection(set(table3.columns)))
+                        common1 = list(set(self.tables[self.tables.index(table1)].columns).intersection(
+                                    set(self.tables[self.tables.index(table3)].columns)))
+                        common2 = list(set(self.tables[self.tables.index(table2)].columns).intersection(
+                                    set(self.tables[self.tables.index(table3)].columns)))
                         if common1 and common2:
                             joins[table1].append((table3, common1[0])) # maybe ?
                             joins[table2].append((table3, common2[0]))
@@ -338,6 +352,7 @@ class Table():
 
     def __str__(self):
         return str(self.name)
+        # return f"Table - {self.name}"
 
     def name(self):
         return str(self.name)
@@ -346,6 +361,8 @@ def create_app(option, db):
     root=Tk() #Creates the Window
     root.title(title) #Title at the Top
     raise_to_front(root)
+    # if option == 0:
+    #     root.geometry('600x800')
     app=Lbox(root, option, db) #Runs Presser or Lbox
     root.mainloop() #Runs Tkinter (Doesn't run anything after this until the window is closed)
 
@@ -389,19 +406,21 @@ class Lbox(Frame):
         if option == 0:
             self.list_selected = Listbox(self, selectmode = mode,
                             yscrollcommand = self.yscrollbar.set)
-            self.list_all.pack(padx = 10, pady = 10,
+            self.list_selected.pack(padx = 10, pady = 10,
                   expand = YES, fill = BOTH, side = RIGHT)
-            self.add = Button(self,
+            self.add_b = Button(self,
                   text = 'Add',
                   font = ('Veridian', 12),
                   padx = 3, pady = 3,
-                  command = self.add).pack(side = LEFT)
-            self.rem = Button(self,
+                  command = self.add)
+            self.rem_b = Button(self,
                   text = 'Remove',
                   font = ('Veridian', 12),
                   padx = 3, pady = 3,
-                  command = self.rem).pack(side = RIGHT)
-            self.button.pack()
+                  command = self.rem)
+            self.add_b.pack()
+            self.button.pack(side = BOTTOM)
+            self.rem_b.pack()
             self.columns = sorted(self.db.unique_columns)
             for column in self.columns:
                 self.list_all.insert(END, column)
@@ -415,6 +434,7 @@ class Lbox(Frame):
             self.refresh.pack(side = LEFT)
             for db in sorted(self.db.keys()):
                 self.list_all.insert(END, db)
+            self.list_all.activate(0)
         self.yscrollbar.config(command = self.list_all.yview)
 
     def add(self):
@@ -434,12 +454,14 @@ class Lbox(Frame):
             for db in db_ref.keys():
                 obj = db_ref[db]
                 choices_tables = {};
-                for i in self.list_selected.curselection():
-                    choice = self.list_selected.get(i)[0]
-                    for table in db_ref[db].tables:
+                for choice in self.list_selected.get(0, END):
+                    choice = choice[0]
+                    for table in obj.tables:
                         if choice in table.columns:
                             if choice not in choices_tables.keys():
                                 choices_tables[choice] = [table]
+                                # print(table)
+                                # print(obj.tables[obj.tables.index(table)])
                             else:
                                 choices_tables[choice].append(table)
                 obj.get_req_tables(choices_tables)
@@ -447,7 +469,10 @@ class Lbox(Frame):
             choice = self.list_all.get(ANCHOR)
             self.root.destroy()
             config.db_info = [choice, databases[choice]]
-            owner_popup(f'Set Up {choice}')
+            if config.dbs[choice]:
+                config.create_db(config.dbs[choice])
+            else:
+                owner_popup(f'Set Up {choice}')
     
     def refresh_config(self):
         self.root.destroy()
@@ -655,7 +680,7 @@ def read_tnsnames(file):
 class Config():
     def __init__(self):
         self.file = "settings/config.txt"
-        self.db = None
+        self.dbs = {}
         self.db_info = None
         self.tns_file = None
 
@@ -665,13 +690,23 @@ class Config():
             contents = contents.split('&')
             del contents[0] # empty space from first &
             self.tns_file = contents[0]
+            for content in contents:
+                if re.match('C:', content):
+                    self.tns_file = content
+                    continue
+                content = content.split('=')
+                self.dbs[content[0]] = content[1]
 
     def write_config(self):
         with open(self.file, "w") as file:
-            file.write(f'&{config.tns_file}')
+            content = f'&{config.tns_file}'
+            content += f'&{self.db.name}={self.db.table_owner}'
+            file.write(content)
 
     def create_db(self, owner):
         self.db = Database(self.db_info[0], self.db_info[1][0], self.db_info[1][1], owner)
+        if not self.db_info[0] in self.dbs:
+            self.write_config()
 
 def setup_config():
     root = Tk()
