@@ -264,6 +264,7 @@ class Database():
         return k[v.index(max(v))]
 
     def build_query(self, req_tables):
+        self.req_tables = req_tables
         self.get_filters(set(tuple(x) for x in req_tables.values())) # Easiest way to get choices at this point
         query = ''
         if len(req_tables) == 1:
@@ -388,9 +389,8 @@ class Lbox(Frame):
 
     def choose(self, option):
         mode = 'single'
-        if option == 0:
+        if option == 0 or option == 2:
             choices = 'columns'
-            #mode = 'single'
             self.search_var = StringVar()
             self.search_var.trace('w', lambda name, index, mode: self.update_list())
             self.search_lab = Label(self,
@@ -402,10 +402,6 @@ class Lbox(Frame):
                         width = 15)
         elif option == 1:
             choices = 'databases'
-            #mode = 'single'
-        elif option == 2:
-            choices = 'columns'
-            #mode = 'single'
 
         self.pack()
         self.yscrollbar = Scrollbar(self)
@@ -415,24 +411,34 @@ class Lbox(Frame):
                    font = ('Veridian', 16),
                    padx = 3, pady = 3)
         self.label.pack()
-        if option == 0:
+        if option == 0: #leave off search on filters for now
             self.search_lab.pack()
             self.search_bar.pack()
+            self.search_bar.focus_force()
         self.list_all = Listbox(self, selectmode = mode,
                         yscrollcommand = self.yscrollbar.set)
         self.list_all.pack(padx = 10, pady = 10,
                   expand = YES, fill = BOTH, side = LEFT)
-        self.list_all.focus_force()
+        #self.list_all.focus_force()
         self.button = Button(self,
                   text = 'Enter',
                   font = ('Veridian', 12),
                   padx = 3, pady = 3,
                   command = self.get)
-        if option == 0:
+        if option == 0 or option == 2:
             self.list_selected = Listbox(self, selectmode = mode,
                             yscrollcommand = self.yscrollbar.set)
             self.list_selected.pack(padx = 10, pady = 10,
                   expand = YES, fill = BOTH, side = RIGHT)
+            if option == 2:
+                self.lab = Label(self,
+                   text = 'Create filter here',
+                   font = ('Veridian', 10),
+                   padx = 3, pady = 3).pack()
+                self.entry = Entry(self, width = 15)
+                self.entry.pack()
+                self.entry.bind('<Return>', self.add)
+                self.entry.focus_force()
             self.add_b = Button(self,
                   text = 'Add',
                   font = ('Veridian', 12),
@@ -444,10 +450,15 @@ class Lbox(Frame):
                   padx = 3, pady = 3,
                   command = self.rem)
             self.add_b.pack()
-            self.button.pack(side = BOTTOM)
             self.rem_b.pack()
-            for column in sorted(self.db.unique_columns):
-                self.list_all.insert(END, column)
+            self.button.pack(side = BOTTOM)
+            if option == 0:
+                for column in sorted(self.db.unique_columns):
+                    self.list_all.insert(END, column)
+            elif option == 2:
+                for table in self.db.req_tables.keys():
+                    for column in self.db.tables[self.db.tables.index(table)].columns:
+                        self.list_all.insert(END, column)
         elif option == 1:
             self.button.pack()
             self.refresh = Button(self,
@@ -459,22 +470,24 @@ class Lbox(Frame):
             for db in sorted(self.db.keys()):
                 self.list_all.insert(END, db)
             self.list_all.activate(0)
-        elif option == 2:
-            self.entry_lab = Label(self,
-                text = 'Filter column on:',
-                font = ('Veridian', 10),
-                padx = 3, pady = 3)
-            self.entry = Entry(self, width = 15)
-            self.entry.bind('<Return>', self.set_filters)
-            self.button = Button(self,
-                text = 'Enter',
-                font = ('Veridian', 12),
-                padx = 3, pady = 3,
-                command = self.set_filters).pack(side = BOTTOM)
-            self.entry.pack(side = BOTTOM)
-            self.entry_lab.pack(side = BOTTOM)
-            for choice in sorted(self.db.choice_list):
-                self.list_all.insert(END, choice)
+        # elif option == 2: # old design
+        #     self.entry_lab = Label(self,
+        #         text = 'Filter column on:',
+        #         font = ('Veridian', 10),
+        #         padx = 3, pady = 3)
+        #     self.entry = Entry(self, width = 15)
+        #     self.entry.bind('<Return>', self.set_filters)
+        #     self.button = Button(self,
+        #         text = 'Enter',
+        #         font = ('Veridian', 12),
+        #         padx = 3, pady = 3,
+        #         command = self.set_filters).pack(side = BOTTOM)
+        #     self.entry.pack(side = BOTTOM)
+        #     self.entry_lab.pack(side = BOTTOM)
+        #     for choice in sorted(self.db.choice_list):
+        #         self.list_all.insert(END, choice)
+        #     self.db.filters[len(self.db.filters)-1] # last filter added
+                
         self.yscrollbar.config(command = self.list_all.yview)
 
     def set_filters(self):
@@ -494,16 +507,29 @@ class Lbox(Frame):
                 self.list_all.insert(END, item)
 
     def add(self):
-        for i in sorted(self.list_all.curselection()):
-            choice = self.list_all.get(i)
+        # for i in sorted(self.list_all.curselection()):
+        #     choice = self.list_all.get(i)
+        #     self.list_selected.insert(END, choice)
+        #     self.list_all.delete(i)
+        if self.option == 0:
+            choice = self.list_all.get(ANCHOR)
             self.list_selected.insert(END, choice)
-            self.list_all.delete(i)
+            self.list_all.delete(ANCHOR)
+        elif self.option == 2:
+            choice = self.list_all.get(ANCHOR)
+            filt = self.entry.get()
+            self.list_selected.insert(END, choice+' '+filt)
+            self.list_all.delete(ANCHOR)
+            
 
     def rem(self):
-        for i in sorted(self.list_selected.curselection()):
-            choice = self.list_all.get(i)
-            self.list_selected.delete(i)
-            self.list_all.insert(END, choice)
+        # for i in sorted(self.list_selected.curselection()):
+        #     choice = self.list_all.get(i)
+        #     self.list_selected.delete(i)
+        #     self.list_all.insert(END, choice)
+        choice = self.list_all.get(ANCHOR)
+        self.list_selected.delete(ANCHOR)
+        self.list_all.insert(END, choice)
         
     def get(self):
         if self.option == 0:
@@ -527,6 +553,8 @@ class Lbox(Frame):
                 config.create_db(config.dbs[choice])
             else:
                 owner_popup(f'Set Up {choice}')
+        elif self.option == 2:
+            print('get function')
     
     def refresh_config(self):
         self.root.destroy()
