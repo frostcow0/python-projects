@@ -266,6 +266,7 @@ class Database():
         return k[v.index(max(v))]
 
     def build_query(self, req_tables):
+        filters = self.get_filters(set( tuple(x) for x in req_tables.values())) # Easiest way to get choices at this point
         query = ''
         if len(req_tables) == 1:
             for table, choices in req_tables.items():
@@ -290,11 +291,14 @@ class Database():
             for table1, container in joins.items():
                 for table2, common in container:
                     if i == 1:
-                        keyword == '\nAND '
+                        keyword = '\nAND '
+                        print('anding')
                     else:
                         i += 1
+                        print(f'i = {i}')
+                    print(f'keyword = {keyword}')
                     where += keyword
-                    where += f'{table1.name}.{common} = {table2}.{common}'
+                    where += f'{table1}.{common} = {table2}.{common}'
             query += select + frm + where
         print('='*60)
         print(query)
@@ -306,9 +310,6 @@ class Database():
             if i == len(tables)-1:
                 break
             for j, table2 in enumerate(tables[i+1:]):
-                t1 = set(self.tables[self.tables.index(table1)].columns)
-                t2 = set(self.tables[self.tables.index(table2)].columns)
-                print(t1, t2)
                 common = list(set(self.tables[self.tables.index(table1)].columns).intersection(
                             set(self.tables[self.tables.index(table2)].columns)))
                 if common:
@@ -336,6 +337,11 @@ class Database():
                     self.create_popup(f"Nothing in common found for {table1}", 1)
                     raise(f"Nothing in common found for {table1}")
         return joins
+
+    def get_filters(self, choices):
+        for choice in choices:
+            for item in choice:
+                print(item)
 
 class Table():
     def __init__(self, name, columns, database):
@@ -609,7 +615,7 @@ class Popup(Frame):
                   text = 'CSV',
                   font = ('Veridian', 12),
                   padx = 3, pady = 6,
-                  command = self.export_xlsx)
+                  command = self.export_csv)
         self.csv.pack()
 
         self.widgets = [self.sql, self.xlsx, self.csv]
@@ -640,8 +646,7 @@ class Popup(Frame):
         self.widgets = [self.text, self.back_button]
 
     def export_xlsx(self):
-        
-        self.message+='\nWHERE ROWNUM <= 30'
+        self.message+='\nWHERE ROWNUM <= 30' # for testing
         for widget in self.widgets:
             widget.pack_forget()
         self.root.geometry('500x50')
@@ -656,8 +661,19 @@ class Popup(Frame):
                 font = ("Verdana", 14)).pack()
 
     def export_csv(self):
+        self.message+='\nWHERE ROWNUM <= 30' # for testing
         for widget in self.widgets:
             widget.pack_forget()
+        self.root.geometry('500x50')
+        for db in db_ref.keys():
+            db_obj = db_ref[db]
+            df = pd.read_sql(self.message, db_obj.connection)
+        today = datetime.today().strftime('%Y-%m-%d')
+        filename = f'{db_obj.name}_query-{today}.csv'
+        df.to_csv(filename, index = False)
+        self.label = Label(self,
+                text = f'Exported {db_obj.name} to {filename}',
+                font = ("Verdana", 14)).pack()
             
 def raise_to_front(window):
     window.lift()
