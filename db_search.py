@@ -32,6 +32,7 @@ class Database():
         self.cursor = None
         self.schema = defaultdict(list)
         self.unique_columns = []
+        self.filters = {}
         self.init_db_connection()
         self.loading()
 
@@ -230,7 +231,6 @@ class Database():
 
     def get_req_tables(self, choices_tables):
         req_tables = {}
-        # self.choice_table_key = {}
         while len(choices_tables.keys())>0:
             choices = [x for x in choices_tables.keys()]
             table_score = self.build_table_score(choices_tables) #build_table_score(choices_tables)
@@ -240,10 +240,8 @@ class Database():
                     del choices_tables[choice]
                     if table not in req_tables:
                         req_tables[table] = [choice]
-                        # self.choice_table_key[choice] = table.name
                     else:
                         req_tables[table].append(choice)
-                        # self.choice_table_key[choice].append(table.name)
         self.build_query(req_tables)
 
     def build_table_score(self, choices_tables):
@@ -266,15 +264,26 @@ class Database():
         return k[v.index(max(v))]
 
     def build_query(self, req_tables):
-        filters = self.get_filters(set( tuple(x) for x in req_tables.values())) # Easiest way to get choices at this point
+        self.get_filters(set(tuple(x) for x in req_tables.values())) # Easiest way to get choices at this point
         query = ''
         if len(req_tables) == 1:
             for table, choices in req_tables.items():
+                i = 0
+                keyword = '\nWHERE'
+                where = ''
                 query += 'SELECT\n\t'
                 for choice in choices:
                     query += f'{choice}, '
+                    if choice in self.filters:
+                        if i == 1:
+                            keyword = '\nAND '
+                        else:
+                            i += 1
+                        where += f'{keyword} {choice} = {self.filters[choice]}'
                 query = query[:len(query) - 2]
                 query += f'\nFROM\n\t{self.table_owner}.{table}'
+                if len(self.filters) > 0:
+                    query += where
         else: 
             joins = self.join([x for x in req_tables.keys()])
             select = 'SELECT\n\t'
@@ -282,9 +291,12 @@ class Database():
             where = ''
             i = 0
             keyword = '\nWHERE '
+            fltr = '\nAND'
             for table, choices in req_tables.items():
                 for choice in choices:
                     select += f'{table}.{choice}, '
+                    if choice in self.filters:
+                        print('in filters')
                 frm += f'{self.table_owner}.{table}, '
             select = select[:len(select) - 2]
             frm = frm[:len(frm) - 2]
@@ -292,16 +304,17 @@ class Database():
                 for table2, common in container:
                     if i == 1:
                         keyword = '\nAND '
-                        print('anding')
                     else:
                         i += 1
-                        print(f'i = {i}')
-                    print(f'keyword = {keyword}')
                     where += keyword
                     where += f'{table1}.{common} = {table2}.{common}'
+            for column, value in self.filters:
+                pass
+                where += keyword
+                where += f''
             query += select + frm + where
         print('='*60)
-        print(query)
+        print(query+'\n')
         self.create_popup(query, 0)
 
     def join(self, tables):
@@ -339,9 +352,11 @@ class Database():
         return joins
 
     def get_filters(self, choices):
+        self.choice_list = []
         for choice in choices:
             for item in choice:
-                print(item)
+                self.choice_list.append(item)
+        create_app(2, self)
 
 class Table():
     def __init__(self, name, columns, database):
@@ -369,15 +384,13 @@ class Lbox(Frame):
         self.root = master
         self.db = db
         self.option = option
-        if self.option == 0:
-            self.choose(0)
-        elif self.option == 1:
-            self.choose(1)
+        self.choose(self.option)
 
     def choose(self, option):
+        mode = 'single'
         if option == 0:
             choices = 'columns'
-            mode = 'multiple'
+            #mode = 'single'
             self.search_var = StringVar()
             self.search_var.trace('w', lambda name, index, mode: self.update_list())
             self.search_lab = Label(self,
@@ -389,13 +402,16 @@ class Lbox(Frame):
                         width = 15)
         elif option == 1:
             choices = 'databases'
-            mode = 'single'
+            #mode = 'single'
+        elif option == 2:
+            choices = 'columns'
+            #mode = 'single'
 
         self.pack()
         self.yscrollbar = Scrollbar(self)
         self.yscrollbar.pack(side = RIGHT, fill = BOTH)
         self.label = Label(self,
-                   text = f'Select from the {choices} below :  ',
+                   text = f'Select from the {choices} below',
                    font = ('Veridian', 16),
                    padx = 3, pady = 3)
         self.label.pack()
@@ -430,8 +446,7 @@ class Lbox(Frame):
             self.add_b.pack()
             self.button.pack(side = BOTTOM)
             self.rem_b.pack()
-            self.columns = sorted(self.db.unique_columns)
-            for column in self.columns:
+            for column in sorted(self.db.unique_columns):
                 self.list_all.insert(END, column)
         elif option == 1:
             self.button.pack()
@@ -444,11 +459,37 @@ class Lbox(Frame):
             for db in sorted(self.db.keys()):
                 self.list_all.insert(END, db)
             self.list_all.activate(0)
+        elif option == 2:
+            self.entry_lab = Label(self,
+                text = 'Filter column on:',
+                font = ('Veridian', 10),
+                padx = 3, pady = 3)
+            self.entry = Entry(self, width = 15)
+            self.entry.bind('<Return>', self.set_filters)
+            self.button = Button(self,
+                text = 'Enter',
+                font = ('Veridian', 12),
+                padx = 3, pady = 3,
+                command = self.set_filters).pack(side = BOTTOM)
+            self.entry.pack(side = BOTTOM)
+            self.entry_lab.pack(side = BOTTOM)
+            for choice in sorted(self.db.choice_list):
+                self.list_all.insert(END, choice)
         self.yscrollbar.config(command = self.list_all.yview)
+
+    def set_filters(self):
+        column = self.list_all.get(ANCHOR)
+        value = self.entry.get()
+        if value == 'today':
+            value = "'"+datetime.today().strftime('%Y-%m-%d')+"'"
+        elif value == 'month':
+            value = "'"+datetime.today().strftime('%Y-%m')+"'"
+        self.db.filters[column] = value
+        print(self.db.filters)
 
     def update_list(self):
         self.list_all.delete(0, END)
-        for item in self.columns:
+        for item in sorted(self.db.unique_columns):
             if self.search_var.get().lower() in item[0].lower():
                 self.list_all.insert(END, item)
 
@@ -646,7 +687,7 @@ class Popup(Frame):
         self.widgets = [self.text, self.back_button]
 
     def export_xlsx(self):
-        self.message+='\nWHERE ROWNUM <= 30' # for testing
+        self.message+='\nAND ROWNUM <= 30' # for testing
         for widget in self.widgets:
             widget.pack_forget()
         self.root.geometry('500x50')
@@ -661,7 +702,7 @@ class Popup(Frame):
                 font = ("Verdana", 14)).pack()
 
     def export_csv(self):
-        self.message+='\nWHERE ROWNUM <= 30' # for testing
+        self.message+='\nAND ROWNUM <= 30' # for testing
         for widget in self.widgets:
             widget.pack_forget()
         self.root.geometry('500x50')
