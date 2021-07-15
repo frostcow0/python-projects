@@ -703,9 +703,20 @@ class Popup(Frame):
         for db in db_ref.keys():
             db_obj = db_ref[db]
             df = pd.read_sql(self.message, db_obj.connection)
+        
         today = datetime.today().strftime('%Y-%m-%d')
         filename = f'{db_obj.name}_query-{today}.xlsx'
-        df.to_excel(filename, index = False)
+        sheetname = f'Excel Export {today}'
+
+        writer = pd.ExcelWriter(filename, engine = 'xlsxwriter')
+        df.to_excel(writer, sheet_name = sheetname, header = False, index = False)
+        worksheet = writer.sheets[sheetname]
+        (max_row, max_col) = df.shape
+
+        headers = [{'header': header} for header in df.columns] # Cool way to create list w/ one line
+        worksheet.add_table(0, 0, max_row, max_col - 1, {'columns': headers})
+        writer.save()
+
         self.label = Label(self,
                 text = f'Exported {db_obj.name} to {filename}',
                 font = ("Verdana", 14)).pack()
