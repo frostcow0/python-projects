@@ -32,7 +32,8 @@ class Database():
         self.cursor = None
         self.schema = defaultdict(list)
         self.unique_columns = []
-        self.filters = {}
+        self.filters = []
+        self.distinct = 0
         self.init_db_connection()
         self.loading()
 
@@ -104,7 +105,6 @@ class Database():
                 init()
             else:
                 print(f"Un-caught error. Error code: {error.code}")
-        #self.write_schema() #if we dont read, dont need write
         self.exit_popup()
 
     def write_schema(self): # deprecated
@@ -266,38 +266,37 @@ class Database():
     def build_query(self, req_tables):
         self.req_tables = req_tables
         self.get_filters(set(tuple(x) for x in req_tables.values())) # Easiest way to get choices at this point
-        query = ''
         if len(req_tables) == 1:
             for table, choices in req_tables.items():
                 i = 0
                 keyword = '\nWHERE'
                 where = ''
-                query += 'SELECT\n\t'
+                if self.distinct == 1:
+                    query = f'SELECT DISTINCT\n\t'
+                else: query = f'SELECT\n\t'
                 for choice in choices:
                     query += f'{choice}, '
-                    if choice in self.filters:
-                        if i == 1:
-                            keyword = '\nAND '
-                        else:
-                            i += 1
-                        where += f'{keyword} {choice} = {self.filters[choice]}'
                 query = query[:len(query) - 2]
                 query += f'\nFROM\n\t{self.table_owner}.{table}'
-                if len(self.filters) > 0:
-                    query += where
+                for filter in self.filters:
+                    if i == 1:
+                        keyword = '\nAND '
+                    else:
+                        i += 1
+                    where += f'{keyword} {filter}'
+                query += where
         else: 
             joins = self.join([x for x in req_tables.keys()])
-            select = 'SELECT\n\t'
+            if self.distinct == 1:
+                select = f'SELECT DISTINCT\n\t'
+            else: select = f'SELECT\n\t'
             frm = '\nFROM\n\t'
             where = ''
             i = 0
             keyword = '\nWHERE '
-            fltr = '\nAND'
             for table, choices in req_tables.items():
                 for choice in choices:
                     select += f'{table}.{choice}, '
-                    if choice in self.filters:
-                        print('in filters')
                 frm += f'{self.table_owner}.{table}, '
             select = select[:len(select) - 2]
             frm = frm[:len(frm) - 2]
@@ -309,11 +308,9 @@ class Database():
                         i += 1
                     where += keyword
                     where += f'{table1}.{common} = {table2}.{common}'
-            for column, value in self.filters:
-                pass
-                where += keyword
-                where += f''
-            query += select + frm + where
+            for filter in self.filters:
+                where += f'{keyword} {filter}'
+            query = select + frm + where
         print('='*60)
         print(query+'\n')
         self.create_popup(query, 0)
@@ -399,7 +396,7 @@ class Lbox(Frame):
                         padx = 3, pady = 3)
             self.search_bar = Entry(self,
                         textvariable = self.search_var,
-                        width = 15)
+                        width = 20)
         elif option == 1:
             choices = 'databases'
 
@@ -411,12 +408,9 @@ class Lbox(Frame):
                    font = ('Veridian', 16),
                    padx = 3, pady = 3)
         self.label.pack()
-        if option == 0: #leave off search on filters for now
-            self.search_lab.pack()
-            self.search_bar.pack()
-            self.search_bar.focus_force()
         self.list_all = Listbox(self, selectmode = mode,
-                        yscrollcommand = self.yscrollbar.set)
+                        yscrollcommand = self.yscrollbar.set,
+                        width = 30)
         self.list_all.pack(padx = 10, pady = 10,
                   expand = YES, fill = BOTH, side = LEFT)
         self.button = Button(self,
@@ -426,60 +420,68 @@ class Lbox(Frame):
                   command = self.get)
         if option == 0 or option == 2:
             self.list_selected = Listbox(self, selectmode = mode,
-                            yscrollcommand = self.yscrollbar.set)
+                            yscrollcommand = self.yscrollbar.set,
+                            width = 30)
             self.list_selected.pack(padx = 10, pady = 10,
                   expand = YES, fill = BOTH, side = RIGHT)
             if option == 2:
+                self.text = StringVar(self, value = "ex. = 'MI'")
                 self.lab = Label(self,
                    text = 'Create filter here',
                    font = ('Veridian', 10),
                    padx = 3, pady = 3).pack()
-                self.entry = Entry(self, width = 15)
+                self.entry = Entry(self, width = 20, textvariable = self.text)
                 self.entry.pack()
                 self.entry.bind('<Return>', self.add)
-                self.entry.focus_force()
+                self.entry.bind('<FocusIn>', self.del_placeholder)
+            elif option == 0:
+                self.search_lab.pack()
+                self.search_bar.pack()
+                self.search_bar.focus_force()
             self.add_b = Button(self,
                   text = 'Add',
-                  font = ('Veridian', 12),
+                  font = ('Veridian', 10),
                   padx = 3, pady = 3,
                   command = self.add)
             self.rem_b = Button(self,
                   text = 'Remove',
-                  font = ('Veridian', 12),
+                  font = ('Veridian', 10),
                   padx = 3, pady = 3,
                   command = self.rem)
-            self.add_b.pack()
-            self.rem_b.pack()
-            self.button.pack(side = BOTTOM)
+            self.add_b.pack(fill = X)
+            self.rem_b.pack(fill = X)
+            if option == 0:
+                self.distinct = IntVar()
+                self.radio = Checkbutton(self,
+                        text = 'DISTINCT',
+                        padx = 15, pady = 15,
+                        font = ('Veridian', 10),
+                        variable = self.distinct
+                        ).pack(fill = X)
+            self.button.pack(side = BOTTOM, fill = X)
+            self.list_all.focus_force()
             if option == 0:
                 for column in sorted(self.db.unique_columns):
                     self.list_all.insert(END, column)
             elif option == 2:
-                for table in sorted(self.db.req_tables.keys()):
-                    for column in self.db.tables[self.db.tables.index(table)].columns:
+                for table in self.db.req_tables.keys():
+                    for column in sorted(self.db.tables[self.db.tables.index(table)].columns):
                         self.list_all.insert(END, column)
         elif option == 1:
-            self.button.pack()
             self.refresh = Button(self,
                             text = 'New TNS File',
                             font = ('Veridian', 12),
                             padx = 3, pady = 3,
                             command = self.refresh_config)
-            self.refresh.pack(side = LEFT)
+            self.refresh.pack(fill = X)
+            self.button.pack(fill = X)
             for db in sorted(self.db.keys()):
                 self.list_all.insert(END, db)
-            self.list_all.activate(0)
         self.yscrollbar.config(command = self.list_all.yview)
 
-    def set_filters(self):
-        column = self.list_all.get(ANCHOR)
-        value = self.entry.get()
-        if value == 'today':
-            value = "'"+datetime.today().strftime('%Y-%m-%d')+"'"
-        elif value == 'month':
-            value = "'"+datetime.today().strftime('%Y-%m')+"'"
-        self.db.filters[column] = value
-        print(self.db.filters)
+    def del_placeholder(self, event = None):
+        if self.text.get() == "ex. = 'MI'":
+            self.text.set('')
 
     def update_list(self):
         self.list_all.delete(0, END)
@@ -497,14 +499,13 @@ class Lbox(Frame):
             filt = self.entry.get()
             self.list_selected.insert(END, choice+' '+filt)
             self.list_all.delete(ANCHOR)
-            
 
     def rem(self):
         choice = self.list_all.get(ANCHOR)
         self.list_selected.delete(ANCHOR)
         self.list_all.insert(END, choice)
         
-    def get(self):
+    def get(self, extra = None):
         if self.option == 0:
             for db in db_ref.keys():
                 obj = db_ref[db]
@@ -517,6 +518,7 @@ class Lbox(Frame):
                                 choices_tables[choice] = [table]
                             else:
                                 choices_tables[choice].append(table)
+                self.db.distinct = self.distinct.get()
                 obj.get_req_tables(choices_tables)
         elif self.option == 1:
             choice = self.list_all.get(ANCHOR)
@@ -529,7 +531,8 @@ class Lbox(Frame):
         elif self.option == 2:
             for filt in self.list_selected.get(0, END): # choice = 'filt'
                 self.db.filters.append(filt)
-            
+            self.root.quit()
+            self.root.destroy()
     
     def refresh_config(self):
         self.root.destroy()
@@ -647,20 +650,23 @@ class Popup(Frame):
                   text = 'SQL Query',
                   font = ('Veridian', 12),
                   padx = 3, pady = 6,
+                  width = 15,
                   command = self.export_sql_query)
-        self.sql.pack()
+        self.sql.pack(fill = X)
         self.xlsx = Button(self,
                   text = 'Excel',
                   font = ('Veridian', 12),
                   padx = 3, pady = 6,
+                  width = 15,
                   command = self.export_xlsx)
-        self.xlsx.pack()
+        self.xlsx.pack(fill = X)
         self.csv = Button(self,
                   text = 'CSV',
                   font = ('Veridian', 12),
                   padx = 3, pady = 6,
+                  width = 15,
                   command = self.export_csv)
-        self.csv.pack()
+        self.csv.pack(fill = X)
 
         self.widgets = [self.sql, self.xlsx, self.csv]
 
@@ -777,10 +783,11 @@ class Config():
                 self.dbs[content[0]] = content[1]
 
     def write_config(self):
-        with open(self.file, "w") as file:
-            content = f'&{config.tns_file}'
-            content += f'&{self.db.name}={self.db.table_owner}'
-            file.write(content)
+        if not config.tns_file == '':
+            with open(self.file, "w") as file:
+                content = f'&{config.tns_file}'
+                content += f'&{self.db.name}={self.db.table_owner}'
+                file.write(content)
 
     def create_db(self, owner):
         self.db = Database(self.db_info[0], self.db_info[1][0], self.db_info[1][1], owner)
