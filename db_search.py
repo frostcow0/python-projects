@@ -14,6 +14,7 @@ import cx_Oracle
 import re
 from datetime import datetime
 from os import name, path
+import xlsxwriter
 
 '''
 This script assumes similar tnsnames.ora structure, as well as an
@@ -43,11 +44,11 @@ class Database():
 
         create_app(0, self)
 
-    def create_popup(self, query, option):
+    def create_popup(self, query, option, db = None):
         root=Tk() #Creates the Window
         root.title(title) #Title at the Top
         raise_to_front(root)
-        app=Popup(root, query, option) #Runs Popup or Lbox
+        app=Popup(root, query, option, db) #Runs Popup or Lbox
         root.mainloop()
 
     def __str__(self):
@@ -308,12 +309,16 @@ class Database():
                         i += 1
                     where += keyword
                     where += f'{table1}.{common} = {table2}.{common}'
+            if i == 1:
+                keyword = '\nAND '
+            else:
+                i += 1
             for filter in self.filters:
                 where += f'{keyword} {filter}'
             query = select + frm + where
         print('='*60)
         print(query+'\n')
-        self.create_popup(query, 0)
+        self.create_popup(query, 0, self)
 
     def join(self, tables):
         joins = defaultdict(list)
@@ -467,6 +472,9 @@ class Lbox(Frame):
                 for table in self.db.req_tables.keys():
                     for column in sorted(self.db.tables[self.db.tables.index(table)].columns):
                         self.list_all.insert(END, column)
+                if len(self.db.filters) > 0:
+                    for filter in self.db.filters:
+                        self.list_selected.insert(END, filter)
         elif option == 1:
             self.refresh = Button(self,
                             text = 'New TNS File',
@@ -489,7 +497,7 @@ class Lbox(Frame):
             if self.search_var.get().lower() in item[0].lower():
                 self.list_all.insert(END, item)
 
-    def add(self):
+    def add(self, extra = None):
         if self.option == 0:
             choice = self.list_all.get(ANCHOR)
             self.list_selected.insert(END, choice)
@@ -529,6 +537,7 @@ class Lbox(Frame):
             else:
                 owner_popup(f'Set Up {choice}')
         elif self.option == 2:
+            self.db.filters = []
             for filt in self.list_selected.get(0, END): # choice = 'filt'
                 self.db.filters.append(filt)
             self.root.quit()
@@ -540,21 +549,27 @@ class Lbox(Frame):
         config.write_config()
 
 class Popup(Frame):
-    def __init__(self, master, message, option):
+    def __init__(self, master, message, option, db):
         Frame.__init__(self, master)
         self.root = master
         self.message = message
         self.option = option
+        self.db = db
+        self.widgets = []
         
         self.pack()
         if self.option == 0:
             self.place_buttons()
         elif self.option == 1:
-            self.error()
+            self.error(self.message)
         elif self.option == 2:
             self.setup()
         elif self.option == 3:
             self.tab_owner()
+
+    def clear(self):
+        for widget in self.widgets:
+            widget.pack_forget()
 
     def exit(self, extra = None):
         self.root.destroy()
@@ -629,10 +644,10 @@ class Popup(Frame):
             root.mainloop()
             setup_config()
 
-    def error(self):
-        self.pack()
+    def error(self, message):
+        self.clear()
         self.lbl = Label(self,
-                    text = self.message,
+                    text = message,
                     font = ('Veridian', 12),
                     padx = 3, pady = 3)
         self.lbl.pack()
@@ -646,6 +661,7 @@ class Popup(Frame):
         self.widgets = [self.lbl, self.button]
         
     def place_buttons(self):
+        self.clear()
         self.sql = Button(self,
                   text = 'SQL Query',
                   font = ('Veridian', 12),
@@ -671,16 +687,14 @@ class Popup(Frame):
         self.widgets = [self.sql, self.xlsx, self.csv]
 
     def back(self):
-        for widget in self.widgets:
-            widget.pack_forget()
+        self.clear()
         self.place_buttons()
     
     def export_sql_query(self):
-        for widget in self.widgets:
-            widget.pack_forget()
+        self.clear()
         self.text = Text(self,
                         height = 10,
-                        width = 60,
+                        width = 100,
                         font = ("Veridian", 10),
                         padx = 3, pady = 3)
         self.text.pack()
@@ -697,34 +711,44 @@ class Popup(Frame):
 
     def export_xlsx(self):
         self.message+='\nAND ROWNUM <= 30' # for testing
-        for widget in self.widgets:
-            widget.pack_forget()
+        self.clear()
         self.root.geometry('500x50')
-        for db in db_ref.keys():
-            db_obj = db_ref[db]
-            df = pd.read_sql(self.message, db_obj.connection)
+        while True:
+            try:
+                for db in db_ref.keys():
+                    db_obj = db_ref[db]
+                    df = pd.read_sql(self.message, db_obj.connection)
+                break
+            except ValueError as e:
+                self.error(f'Error: {e}')
+            except pd.io.sql.DatabaseError as e:
+                self.root.geometry('400x200')
+                self.error(f'Error: {e}')
         
         today = datetime.today().strftime('%Y-%m-%d')
         filename = f'{db_obj.name}_query-{today}.xlsx'
         sheetname = f'Excel Export {today}'
+        try:
+            writer = pd.ExcelWriter(filename, engine = 'xlsxwriter')
+            df.to_excel(writer, sheet_name = sheetname, header = False, index = False)
+            worksheet = writer.sheets[sheetname]
+            (max_row, max_col) = df.shape
 
-        writer = pd.ExcelWriter(filename, engine = 'xlsxwriter')
-        df.to_excel(writer, sheet_name = sheetname, header = False, index = False)
-        worksheet = writer.sheets[sheetname]
-        (max_row, max_col) = df.shape
+            headers = [{'header': header} for header in df.columns] # Cool way to create list w/ one line
+            worksheet.add_table(0, 0, max_row, max_col - 1, {'columns': headers})
+            writer.save()
 
-        headers = [{'header': header} for header in df.columns] # Cool way to create list w/ one line
-        worksheet.add_table(0, 0, max_row, max_col - 1, {'columns': headers})
-        writer.save()
-
-        self.label = Label(self,
+            self.label = Label(self,
                 text = f'Exported {db_obj.name} to {filename}',
                 font = ("Verdana", 14)).pack()
-
+        except xlsxwriter.exceptions.XlsxFileError as e:
+            self.error(f'Error: {e}')
+        except PermissionError as e:
+            self.error("If the Excel file is open, close it.\n"
+                            f"--- {e}")
     def export_csv(self):
         self.message+='\nAND ROWNUM <= 30' # for testing
-        for widget in self.widgets:
-            widget.pack_forget()
+        self.clear()
         self.root.geometry('500x50')
         for db in db_ref.keys():
             db_obj = db_ref[db]
