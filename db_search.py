@@ -276,15 +276,15 @@ class Database():
                     query = f'SELECT DISTINCT\n\t'
                 else: query = f'SELECT\n\t'
                 for choice in choices:
-                    query += f'{choice}, '
+                    query += f'{choice.lower()}, '
                 query = query[:len(query) - 2]
-                query += f'\nFROM\n\t{self.table_owner}.{table}'
+                query += f'\nFROM\n\t{self.table_owner.lower()}.{table.name.lower()}'
                 for filter in self.filters:
                     if i == 1:
                         keyword = '\nAND '
                     else:
                         i += 1
-                    where += f'{keyword} {filter}'
+                    where += f'{keyword} {filter.upper()}'
                 query += where
         else: 
             joins = self.join([x for x in req_tables.keys()])
@@ -297,8 +297,8 @@ class Database():
             keyword = '\nWHERE '
             for table, choices in req_tables.items():
                 for choice in choices:
-                    select += f'{table}.{choice}, '
-                frm += f'{self.table_owner}.{table}, '
+                    select += f'{table.name.lower()}.{choice.lower()}, '
+                frm += f'{self.table_owner.lower()}.{table.name.lower()}, '
             select = select[:len(select) - 2]
             frm = frm[:len(frm) - 2]
             for table1, container in joins.items():
@@ -308,13 +308,13 @@ class Database():
                     else:
                         i += 1
                     where += keyword
-                    where += f'{table1}.{common} = {table2}.{common}'
+                    where += f'{table1.lower()}.{common.lower()} = {table2.lower()}.{common.lower()}'
             if i == 1:
                 keyword = '\nAND '
             else:
                 i += 1
             for filter in self.filters:
-                where += f'{keyword} {filter}'
+                where += f'{keyword} {filter.upper()}'
             query = select + frm + where
         print('='*60)
         print(query+'\n')
@@ -387,6 +387,8 @@ class Lbox(Frame):
         self.root = master
         self.db = db
         self.option = option
+        self.filter_choices = {}
+        self.current_filters = []
         self.choose(self.option)
 
     def choose(self, option):
@@ -469,12 +471,15 @@ class Lbox(Frame):
                 for column in sorted(self.db.unique_columns):
                     self.list_all.insert(END, column)
             elif option == 2:
+                self.list_all.insert(END, 'ROWNUM')
                 for table in self.db.req_tables.keys():
                     for column in sorted(self.db.tables[self.db.tables.index(table)].columns):
                         self.list_all.insert(END, column)
+                        self.filter_choices[column] = table
                 if len(self.db.filters) > 0:
                     for filter in self.db.filters:
-                        self.list_selected.insert(END, filter)
+                        self.list_selected.insert(END, filter.split('.')[1])
+                
         elif option == 1:
             self.refresh = Button(self,
                             text = 'New TNS File',
@@ -505,13 +510,28 @@ class Lbox(Frame):
         elif self.option == 2:
             choice = self.list_all.get(ANCHOR)
             filt = self.entry.get()
+            if not choice == 'ROWNUM':
+                table = self.filter_choices[choice]
+                self.current_filters.append(table.name+'.'+choice+' '+filt)
+            else:
+                self.current_filters.append(choice+' '+filt)
             self.list_selected.insert(END, choice+' '+filt)
             self.list_all.delete(ANCHOR)
 
     def rem(self):
-        choice = self.list_all.get(ANCHOR)
-        self.list_selected.delete(ANCHOR)
-        self.list_all.insert(END, choice)
+        if self.option == 0:
+            choice = self.list_selected.get(ANCHOR)
+            self.list_selected.delete(ANCHOR)
+            self.list_all.insert(END, choice)
+        elif self.option == 2:
+            choice = self.list_selected.get(ANCHOR)
+            self.list_selected.delete(ANCHOR)
+            if not choice == 'ROWNUM':
+                table = self.filter_choices[choice]
+                self.current_filters.remove(table.name+'.'+choice)
+            else:
+                self.current_filters.remove(choice)
+
         
     def get(self, extra = None):
         if self.option == 0:
@@ -538,7 +558,7 @@ class Lbox(Frame):
                 owner_popup(f'Set Up {choice}')
         elif self.option == 2:
             self.db.filters = []
-            for filt in self.list_selected.get(0, END): # choice = 'filt'
+            for filt in self.current_filters:
                 self.db.filters.append(filt)
             self.root.quit()
             self.root.destroy()
@@ -710,7 +730,6 @@ class Popup(Frame):
         self.widgets = [self.text, self.back_button]
 
     def export_xlsx(self):
-        self.message+='\nAND ROWNUM <= 30' # for testing
         self.clear()
         self.root.geometry('500x50')
         while True:
@@ -735,7 +754,7 @@ class Popup(Frame):
             (max_row, max_col) = df.shape
 
             headers = [{'header': header} for header in df.columns] # Cool way to create list w/ one line
-            worksheet.add_table(0, 0, max_row, max_col - 1, {'columns': headers})
+            worksheet.add_table(0, 0, max_row - 1, max_col - 1, {'columns': headers})
             writer.save()
 
             self.label = Label(self,
@@ -747,7 +766,6 @@ class Popup(Frame):
             self.error("If the Excel file is open, close it.\n"
                             f"--- {e}")
     def export_csv(self):
-        self.message+='\nAND ROWNUM <= 30' # for testing
         self.clear()
         self.root.geometry('500x50')
         for db in db_ref.keys():
