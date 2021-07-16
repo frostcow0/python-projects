@@ -308,7 +308,7 @@ class Database():
                     else:
                         i += 1
                     where += keyword
-                    where += f'{table1.lower()}.{common.lower()} = {table2.lower()}.{common.lower()}'
+                    where += f'{table1.name.lower()}.{common.lower()} = {table2.name.lower()}.{common.lower()}'
             if i == 1:
                 keyword = '\nAND '
             else:
@@ -440,7 +440,7 @@ class Lbox(Frame):
                 self.entry = Entry(self, width = 20, textvariable = self.text)
                 self.entry.pack()
                 self.entry.bind('<Return>', self.add)
-                self.entry.bind('<FocusIn>', self.del_placeholder)
+                self.entry.bind('<FocusIn>', self.clear_entry)
             elif option == 0:
                 self.search_lab.pack()
                 self.search_bar.pack()
@@ -478,7 +478,9 @@ class Lbox(Frame):
                         self.filter_choices[column] = table
                 if len(self.db.filters) > 0:
                     for filter in self.db.filters:
-                        self.list_selected.insert(END, filter.split('.')[1])
+                        if not re.match('ROWNUM', filter):
+                            self.list_selected.insert(END, filter.split('.')[1])
+                        else: self.list_selected.insert(END, filter)
                 
         elif option == 1:
             self.refresh = Button(self,
@@ -492,9 +494,8 @@ class Lbox(Frame):
                 self.list_all.insert(END, db)
         self.yscrollbar.config(command = self.list_all.yview)
 
-    def del_placeholder(self, event = None):
-        if self.text.get() == "ex. = 'MI'":
-            self.text.set('')
+    def clear_entry(self, event = None):
+        self.text.set('')
 
     def update_list(self):
         self.list_all.delete(0, END)
@@ -503,12 +504,13 @@ class Lbox(Frame):
                 self.list_all.insert(END, item)
 
     def add(self, extra = None):
+        choice = self.list_all.get(ANCHOR)
+        if choice == '':
+            return # they tried to add w/o a selection.
         if self.option == 0:
-            choice = self.list_all.get(ANCHOR)
             self.list_selected.insert(END, choice)
             self.list_all.delete(ANCHOR)
         elif self.option == 2:
-            choice = self.list_all.get(ANCHOR)
             filt = self.entry.get()
             if not choice == 'ROWNUM':
                 table = self.filter_choices[choice]
@@ -589,7 +591,7 @@ class Popup(Frame):
 
     def clear(self):
         for widget in self.widgets:
-            widget.pack_forget()
+            widget.destroy()
 
     def exit(self, extra = None):
         self.root.destroy()
@@ -694,14 +696,14 @@ class Popup(Frame):
                   font = ('Veridian', 12),
                   padx = 3, pady = 6,
                   width = 15,
-                  command = self.export_xlsx)
+                  command = self.loading_xlsx)
         self.xlsx.pack(fill = X)
         self.csv = Button(self,
                   text = 'CSV',
                   font = ('Veridian', 12),
                   padx = 3, pady = 6,
                   width = 15,
-                  command = self.export_csv)
+                  command = self.loading_csv)
         self.csv.pack(fill = X)
 
         self.widgets = [self.sql, self.xlsx, self.csv]
@@ -760,11 +762,14 @@ class Popup(Frame):
             self.label = Label(self,
                 text = f'Exported {db_obj.name} to {filename}',
                 font = ("Verdana", 14)).pack()
+
+            self.widgets = [self.label]
         except xlsxwriter.exceptions.XlsxFileError as e:
             self.error(f'Error: {e}')
         except PermissionError as e:
             self.error("If the Excel file is open, close it.\n"
                             f"--- {e}")
+
     def export_csv(self):
         self.clear()
         self.root.geometry('500x50')
@@ -777,6 +782,26 @@ class Popup(Frame):
         self.label = Label(self,
                 text = f'Exported {db_obj.name} to {filename}',
                 font = ("Verdana", 14)).pack()
+
+        self.widgets = [self.label]
+
+    def loading_xlsx(self):
+        self.clear()
+        self.load = Label(self,
+                text = 'Loading query for XLSX . . .',
+                font = ("Verdana", 14))
+        self.load.pack()
+        self.widgets = [self.load]
+        self.after(200, self.export_xlsx)
+
+    def loading_csv(self):
+        self.clear()
+        self.load = Label(self,
+                text = 'Loading query for CSV . . .',
+                font = ("Verdana", 14))
+        self.load.pack()
+        self.widgets = [self.load]
+        self.after(200, self.export_csv)
             
 def raise_to_front(window):
     window.lift()
