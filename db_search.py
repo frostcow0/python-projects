@@ -571,7 +571,7 @@ class Lbox(Frame):
         config.write_config()
 
 class Popup(Frame):
-    def __init__(self, master, message, option, db):
+    def __init__(self, master, message, option, db = None):
         Frame.__init__(self, master)
         self.root = master
         self.message = message
