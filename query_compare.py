@@ -17,12 +17,16 @@ def trial_1(login_info):
     query = '''
 select distinct
     s.sub_id, s.sub_nm, to_char(invoice.trans_dttm, 'YYYY-MM-DD') as invoice_dt,
-    invoice.amt as invoice_amt, to_char(payment.trans_dttm, 'YYYY-MM-DD') as payment_dt,
-    payment.amt as payment_amt, invoice.trans_nm as trans_nm
+    invoice.amt as invoice_sum_amt,
+    to_char(min(payment.trans_dttm), 'YYYY-MM-DD') as min_payment_dt,
+    to_char(max(payment.trans_dttm), 'YYYY-MM-DD') as max_payment_dt, 
+    sum(payment.amt) as payment_sum_amt, count(payment.amt) as count_of_payment,
+    invoice.trans_nm as trans_nm
 from
     (
         select
-            max(trans_dttm) as trans_dttm, amt, trans_nm, sub_id
+            max(trans_dttm) as trans_dttm, sum(amt) as amt,
+            trans_nm, sub_id
         from wasabi.v_trans t,
         (
             select
@@ -35,18 +39,19 @@ from
             and (t.trans_stat = 'I' or t.trans_stat = 'C')
             and t.trans_dttm >= add_months(trunc(sysdate), -6)
             and t.trans_typ in nm.trans_typ
-        group by amt, trans_nm, sub_id
+        group by trans_nm, sub_id, trans_cls
     ) invoice,
     lateral(
         select
-            *
+            trans_dttm, amt, sub_id
         from wasabi.v_trans
         where trans_cls = 'P'
+            and (trans_stat = 'I' or trans_stat = 'C')
     ) payment, wasabi.v_sub s
 where payment.trans_dttm >= invoice.trans_dttm
 and invoice.sub_id = s.sub_id
 and payment.sub_id = s.sub_id
-order by s.sub_id
+group by s.sub_id, s.sub_nm, invoice.trans_dttm, invoice.amt, invoice.trans_nm
     '''
     df = pd.read_sql(query, connection)
     print('\t - Read sql.')
@@ -57,7 +62,7 @@ order by s.sub_id
     worksheet = writer.sheets[sheetname]
     (max_row, max_col) = df.shape
     headers = [{'header': header } for header in df.columns]
-    worksheet.add_table(0, 0, max_row - 1, max_col - 1, {'columns': headers})
+    worksheet.add_table(0, 0, max_row - 1, max_col - 1, {'columns': headers, 'style': 'Table Style Dark 5'})
     writer.save()
     print('\t - Finished.')
 
