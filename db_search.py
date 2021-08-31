@@ -137,12 +137,12 @@ class Database():
             'read_schema': self.read_schema,
         }
 
-        # if f"schemas/schema_{self.name.upper()}":
-        #     message = f"Reading from schema_{self.name.upper()} . . ."
-        #     func = ref['read_schema']
-        # else: 
-        #     message = f"Loading from {self.name.upper()} . . ."
-        #     func = ref['create_schema']
+        if f"schemas/schema_{self.name.upper()}":
+            message = f"Reading from schema_{self.name.upper()} . . ."
+            func = ref['read_schema']
+        else: 
+            message = f"Loading from {self.name.upper()} . . ."
+            func = ref['create_schema']
 
         message = f"Loading from {self.name.upper()} . . ."
         func = ref['create_schema']    
