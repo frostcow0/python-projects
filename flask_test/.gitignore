@@ -3,3 +3,5 @@ env/
 help/
 .xlsx
 .txt
+./Lib
+./Scripts

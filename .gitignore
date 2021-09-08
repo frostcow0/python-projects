@@ -5,3 +5,5 @@
 temp2.py
 *.xlsx
 *.csv
+/webscraping/Lib
+/flask_test/Lib
