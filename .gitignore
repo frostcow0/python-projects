@@ -1,2 +1,7 @@
 .pytest_cache
 /__pychache__
+/settings/config.txt
+/schemas
+temp2.py
+*.xlsx
+*.csv

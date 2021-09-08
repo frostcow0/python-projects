@@ -284,6 +284,7 @@ def pull_current(stock):
     file=StringIO(response.text)
     reader=csv.reader(file)
     data=list(reader)
+    print(data)
     d={
        data[0][9][:18]:data[0][9][19:],
        data[0][11][:13]:data[0][11][14:]
