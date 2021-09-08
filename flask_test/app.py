@@ -1,10 +1,19 @@
 from flask import Flask, render_template, url_for, request, redirect
 from flask_sqlalchemy import SQLAlchemy
+from flask_nav import Nav
+from flask_nav.elements import Navbar, View
 from datetime import datetime
 
 app = Flask(__name__,static_folder='static',template_folder='templates') #__name__ references this file.
 app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///test.db'
 db = SQLAlchemy(app)
+nav = Nav(app)
+
+nav.register_element('top', Navbar(
+    'nav',
+    View('Lyain', 'index'),
+    View('Truthan', 'index'),
+))
 
 class Test(db.Model):
     id=db.Column(db.Integer, primary_key=True)
@@ -53,9 +62,10 @@ def update(id):
             db.session.commit()
             return redirect('/')
         except:
-            return 'There was an issue updatign your task'
+            return 'There was an issue updating your task'
     else:
         return render_template('update.html', task=task)
 
 if __name__ == "__main__":
     app.run(debug=True)
+    #nav.init_app(app)

@@ -32,7 +32,10 @@
     {% endif %}
     <form action='/' method='POST'>
         <input type='text' name='content' id='content'>
-        <input type='submit' value='Add Task'>
+        <!-- <input type='submit' value='Add Task'> -->
+        {% raw %}
+        <button type="submit" class="btn btn-primary" ng-disabled="loading">Add Task</button>
+        {% endraw %}
     </form>
 </div>
 {% endblock %}
