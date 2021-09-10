@@ -2,17 +2,19 @@ from flask import Flask, render_template, url_for, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 from flask_nav import Nav
 from flask_nav.elements import Navbar, View
+from flask_bootstrap import Bootstrap
 from datetime import datetime
 
 app = Flask(__name__,static_folder='static',template_folder='templates') #__name__ references this file.
 app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///test.db'
 db = SQLAlchemy(app)
 nav = Nav(app)
+Bootstrap(app)
 
 nav.register_element('top', Navbar(
     'nav',
-    View('Lyain', 'index'),
-    View('Truthan', 'index'),
+    View('Home', 'index'),
+    View('Placeholder', 'index'),
 ))
 
 class Test(db.Model):
