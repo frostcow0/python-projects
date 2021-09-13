@@ -23,17 +23,20 @@ class db_connection():
                 database = self.database
             )
             self.cursor = self.connection.cursor()
+            print(f'\t- Connection Initialized for {self.database}')
         except mysql.connector.Error as err:
             if err.errno==errorcode.ER_ACCESS_DENIED_ERROR:
-                print('Invalid Credentials')
+                print('\t- Invalid Credentials')
             elif err.errno==errorcode.ER_BAD_DB_ERROR:
-                print('Database not found')
+                print('\t- Database not found')
             else:
-                print('Cant connect to database: ',err)
+                print('\t- Cant connect to database: ',err)
 
     def pull_query(self):
         self.cursor.execute(self.query)
-        return pd.DataFrame(self.cursor.fetchall()).set_index(0)
+        self.columns = [i[0] for i in self.cursor.description]
+        return pd.DataFrame(self.cursor.fetchall(),
+                columns = self.columns)
 
 def extract():
     db = db_connection('select * from tallest_buildings')

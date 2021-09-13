@@ -1,5 +1,5 @@
 import pandas as pd
 
 def transform(data):
-    data[6] = round(data[5]/data[3], 2)
+    data['meters_p_story'] = round(data['height_m']/data['stories'], 2) 
     return data
