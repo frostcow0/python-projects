@@ -5,6 +5,7 @@ import pandas as pd
 
 # url     = 'https://en.wikipedia.org/wiki/Chinampa'
 url     = 'https://en.wikipedia.org/wiki/Long_Walls'
+# url     = 'https://en.wikipedia.org/wiki/Hurricane_Ivan'
 text    = requests.get(url).text
 soup    = BeautifulSoup(text, 'html.parser')
 
@@ -13,34 +14,35 @@ def parsinTime(reflist):
         'Author': [],
         'The rest :)': []
     }
-    for ref in reflist.find_all('li'): # Each reference
-        reference = re.sub(r'^[\^\sa-z]+', '', ref.text)
-        reference = reference.replace('.\n', '')
-        splitRef = reference.split('. ')
-        data['Author'].append(splitRef[0])
-        try:
-            data['The rest :)'].append(splitRef[1])
-        except:
-            data['The rest :)'].append('')
+    for list in reflist:
+        for ref in list.find_all('li'): # Each reference
+            reference = re.sub(r'^[\^\sa-z]+', '', ref.text)
+            reference = reference.replace('.\n', '')
+            splitRef = reference.split('. ')
+            data['Author'].append(splitRef[0])
+            try:
+                data['The rest :)'].append(splitRef[1])
+            except:
+                data['The rest :)'].append('')
     df = pd.DataFrame(data)
-    print(df)
+    return df
 
-if __name__ == '__main__':
+def findContent():
     content = soup.find(id = 'content')
     if content:
         bodyContent = content.find(id = 'bodyContent')
         if bodyContent:
             contentText = bodyContent.find(id = 'mw-content-text')
             if contentText:
-                reflist = contentText.find('div', {'class': 'reflist reflist-columns references-column-width reflist-columns-2'})
+                reflist = contentText.select('div[class*="reflist"]')
                 if reflist:
-                    parsinTime(reflist)
+                    return reflist
                 else:
-                    parser = contentText.find(id = 'mw-parser-output')
+                    parser = contentText.find('div', {'class': 'mw-parser-output'})
                     if parser:
                         reflist = contentText.find('div', {'class': 'reflist'})
                         if reflist:
-                            parsinTime(reflist)
+                            return reflist
                         else:
                             print("No reflist")
                     else:
@@ -51,3 +53,10 @@ if __name__ == '__main__':
             print("No bodyContent")
     else:
         print("No content")
+
+if __name__ == '__main__':
+    reflist = findContent()
+    if reflist:
+        df = parsinTime(reflist)
+        print(df.head())
+    
