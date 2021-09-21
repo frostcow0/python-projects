@@ -22,7 +22,7 @@ class db_connection():
                 host = self.host,
                 database = self.database
             )
-            # self.cursor = self.connection.cursor()
+            self.cursor = self.connection.cursor()
             print(f'\t- Connection Initialized for {self.database}')
         except mysql.connector.Error as err:
             if err.errno==errorcode.ER_ACCESS_DENIED_ERROR:
@@ -32,19 +32,33 @@ class db_connection():
             else:
                 print('\t- Cant connect to database: ',err)
 
-    # HOW WE DID IT LAST TIME
-    # def pull_query(self):
-    #     self.cursor.execute(self.query)
-    #     self.columns = [i[0] for i in self.cursor.description]
-    #     return pd.DataFrame(self.cursor.fetchall(),
-    #             columns = self.columns)
-
     def pull_query(self):
-        return pd.read_sql(self.query, self.connection)
+        self.cursor.execute(self.query)
+        self.columns = [i[0] for i in self.cursor.description]
+        return pd.DataFrame(self.cursor.fetchall(),
+                columns = self.columns)
 
 def extract():
     db = db_connection('select * from tallest_buildings')
     return db.pull_query()
 
-# # bldg_name, city, country, stories, year, height_m
-# print(extract().head())
+# bldg_name, city, country, stories, year, height_m
+
+df = extract()
+
+# Unique cities sorted by building with the most stories
+city_stories = df.groupby('city')['stories'].max().sort_values(ascending=False)
+
+# Unique cities sorted by tallest building, with building info
+city_height = df.groupby('city').apply(lambda df: df.loc[df['height_m'].idxmax()])
+
+country_avg_height = df.groupby('country')['height_m'].mean()
+
+print("-"*60)
+print(df.head())
+print("-"*60)
+print(city_stories.head())
+print("-"*60)
+print(city_height.head())
+print("-"*60)
+print(country_avg_height.head())

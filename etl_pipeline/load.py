@@ -1,43 +1,37 @@
-import mysql.connector
-from mysql.connector import errorcode
+from sqlalchemy import create_engine
 import pandas as pd
 
 class db_connection():
-    def __init__(self, query):
+    def __init__(self):
         self.user = 'etl' # database login info
         self.password = 'pipeline'
         self.host = '127.0.0.1'
         self.database = 'pipeline_test'
-        self.query = query
         self.connect()
 
     def __del__(self):
-        self.connection.close()
+        self.engine.dispose()
 
+    # Using SQLAlchemy for pd.to_sql
     def connect(self):
+        try: # pip install mysql-python-connector
+            self.engine = create_engine(f'mysql+mysqlconnector://{self.user}:{self.password}@localhost/{self.database}')
+        except ValueError as vx:
+            print(vx)
+        except Exception as ex:
+            print(ex)
+
+    def push_query(self, frame):
+        tableName = 'tallest_buildings_metrics'
         try:
-            self.connection = mysql.connector.connect(
-                user = self.user,
-                password = self.password,
-                host = self.host,
-                database = self.database
-            )
-            self.cursor = self.connection.cursor()
-            print(f'\t- Connection Initialized for {self.database}')
-        except mysql.connector.Error as err:
-            if err.errno==errorcode.ER_ACCESS_DENIED_ERROR:
-                print('\t- Invalid Credentials')
-            elif err.errno==errorcode.ER_BAD_DB_ERROR:
-                print('\t- Database not found')
-            else:
-                print('\t- Cant connect to database: ',err)
+            df = frame.to_sql(tableName, self.engine, if_exists='fail')
+        except ValueError as vx:
+            print(vx)
+        except Exception as ex:   
+            print(ex)
+        else:
+            print(f"\t- Table {tableName} created successfully")
 
-    def push_query(self):
-        self.cursor.execute(self.query)
-        self.columns = [i[0] for i in self.cursor.description]
-        return pd.DataFrame(self.cursor.fetchall(),
-                columns = self.columns)
-
-def load():
-    db = db_connection('select * from tallest_buildings_metrics')
-    return db.push_query()
+def load(frame):
+    db = db_connection()
+    return db.push_query(frame)
