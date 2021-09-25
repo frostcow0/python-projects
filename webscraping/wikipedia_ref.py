@@ -34,7 +34,7 @@ def findContent():
         if bodyContent:
             contentText = bodyContent.find(id = 'mw-content-text')
             if contentText:
-                reflist = contentText.select('div[class*="reflist"]')
+                reflist = contentText.select('div[class*="reflist"]') # select provides a list
                 if reflist:
                     return reflist
                 else:
