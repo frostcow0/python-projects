@@ -47,7 +47,7 @@ services:
       - |
         echo '-----------------------------------------------'
         echo 'Stalling for the homies...'
-        sleep 30
+        # sleep 30
         echo 'Bootin up, babe'
         bash ./Scripts/kafka_script 
     networks:
@@ -86,6 +86,7 @@ services:
       dockerfile: Dockerfile.connect
     hostname: connect
     container_name: connect
+    working_dir: /apache_kafka
     networks:
       - apache_kafka
     depends_on:
@@ -93,17 +94,17 @@ services:
       - zookeeper
     ports:
       - "8083:8083"
-    entrypoint:
-      - bash
-      - -c
-      - |
-        echo 'Zzzzzz. . .'
-        sleep 40
-        # below is for debugging
-        # sleep 20
+    # entrypoint:
+    #   - bash
+    #   - -c
+    #   - |
+    #     echo 'Zzzzzz. . .'
+    #     sleep 40
+    #     # below is for debugging
+    #     # sleep 20
+    #     bash ./Scripts/connect_script
       #   # Need to replace this with a new Base Image
       #   confluent-hub install --no-prompt #NEED CONNECT DRIVER HERE
-      #   /etc/confluent/docker/run
     environment:
       CONNECT_BOOTSTRAP_SERVERS: 'broker:9092'
       CONNECT_GROUP_ID: mysql
