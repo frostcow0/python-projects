@@ -1,0 +1,65 @@
+#!/usr/bin/env python
+
+from confluent_kafka import DeserializingConsumer
+# from confluent_kafka.error import ConsumeError
+from confluent_kafka.serialization import StringDeserializer
+from confluent_kafka.schema_registry import SchemaRegistryClient
+from confluent_kafka.schema_registry.avro import AvroDeserializer
+# from time import sleep
+
+from utils.parse_command_line_args import receive_parse_command_line_args
+from utils.schemas import *
+
+
+def receive_record(args):
+    topics = [args.topic.rstrip()]
+    # topics = ['sensor_data']
+
+    schema_registry_config = {
+        'url': args.schema_registry }
+    schema_registry_client = SchemaRegistryClient(schema_registry_config)
+
+    avro_deserializer = AvroDeserializer(
+        schema_registry_client,
+        data_schema,
+        dict_to_data)
+
+    string_deserializer = StringDeserializer('utf_8')
+
+    consumer_config = {
+        'bootstrap.servers': args.bootstrap_servers,
+        'key.deserializer': string_deserializer,
+        'value.deserializer': avro_deserializer,
+        'group.id': args.group,
+        'auto.offset.reset': 'earliest'
+    }
+
+    consumer = DeserializingConsumer(consumer_config)
+    consumer.subscribe(topics)
+
+    print(f'Consuming data records from topic(s) {topics}. ^C to exit.')
+    while True:
+        try:
+            # SIGINT can't be handled when polling, limit timeout to 1 second.
+            msg = consumer.poll(10.0)
+            if msg is None:
+                print('\t---Waiting. . .')
+                continue
+
+            data = msg.value()
+            if data is not None:
+                print(f'Data record {msg.key()}:\n'
+                f'\ttemperature: {data.temperature}\n'
+                f'\thumidity: {data.humidity}\n'
+                f'\tmoisture: {data.moisture}\n'
+                f'\tlight: {data.light}')
+        except KeyboardInterrupt:
+            break
+        # except ConsumeError as ce:
+        #     print(f'\t-Error while polling: ',
+        #         ce.exception)
+    print(f'\nClosing consumer.')
+    consumer.close()
+
+if __name__ == "__main__":
+    receive_record(receive_parse_command_line_args())
