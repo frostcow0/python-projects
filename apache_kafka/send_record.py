@@ -6,10 +6,11 @@ from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroSerializer
 
 from utils.parse_command_line_args import send_parse_command_line_args
-from utils.schemas import *
+from utils.schemas import data_schema, data_to_dict, uuid4, Data
 
 
 def send_record(args):
+    """ Sends Record using a SerializingProducer & AvroSerializer """
     topic = args.topic.rstrip()
 
     schema_registry_config = {
@@ -31,7 +32,7 @@ def send_record(args):
     split_incoming_data = args.record_value.split(',')
     if not len(split_incoming_data) == 4: # Data Format Check
         print('** Error: Insufficient Incoming Data: ', split_incoming_data)
-        exit
+        raise Exception
     try: # Data Format Check
         incoming_data = {
             'temperature': int(split_incoming_data[0]),
@@ -60,10 +61,13 @@ def send_record(args):
     producer.flush()
 
 def delivery_report(err, msg):
+    """ Handles Record Callback """
     if err is not None:
         print(f'\t-Failed to deliver message: {err}')
     else:
-        print(f'\t-Produced record to topic {msg.topic()}, partition {msg.partition()}, @ offset {msg.offset()}')
+        print(f'\t-Produced record to topic {msg.topic()}, '
+        'partition {msg.partition()}0, '
+        '@ offset {msg.offset()}')
 
 
 if __name__ == "__main__":

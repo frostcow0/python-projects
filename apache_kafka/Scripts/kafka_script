@@ -1,8 +1,8 @@
 #!/bin/bash
 echo 'Setting up Topic. . .'
-python ./topic_setup.py --topic sensor_data
+python ./topic_setup.py --topic sensor_data,_connect_config,_connect_offset,_connect_status
 # echo 'Sending records. . .'
 # python ./send_record.py --topic sensor_data --record-value '10,11,33,False'
 echo 'Receiving records. . .'
-python -u ./receive_record.py --topic sensor_data
+# python -u ./receive_record.py --topic sensor_data
 echo '---------------Done---------------'

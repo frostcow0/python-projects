@@ -1,19 +1,17 @@
 #!/usr/bin/env python
 
 from confluent_kafka import DeserializingConsumer
-# from confluent_kafka.error import ConsumeError
 from confluent_kafka.serialization import StringDeserializer
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroDeserializer
-# from time import sleep
 
 from utils.parse_command_line_args import receive_parse_command_line_args
-from utils.schemas import *
+from utils.schemas import data_schema, dict_to_data
 
 
 def receive_record(args):
+    """ Receives Record using a DeserializingConsumer & AvroDeserializer """
     topics = [args.topic.rstrip()]
-    # topics = ['sensor_data']
 
     schema_registry_config = {
         'url': args.schema_registry }
@@ -55,10 +53,7 @@ def receive_record(args):
                 f'\tlight: {data.light}')
         except KeyboardInterrupt:
             break
-        # except ConsumeError as ce:
-        #     print(f'\t-Error while polling: ',
-        #         ce.exception)
-    print(f'\nClosing consumer.')
+    print('\nClosing consumer.')
     consumer.close()
 
 if __name__ == "__main__":

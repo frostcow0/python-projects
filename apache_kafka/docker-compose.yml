@@ -37,6 +37,7 @@ services:
   app:
     build:
       context: .
+      dockerfile: Dockerfile.kafka
     container_name: app
     depends_on:
       - broker
@@ -48,7 +49,7 @@ services:
         echo 'Stalling for the homies...'
         sleep 30
         echo 'Bootin up, babe'
-        bash ./kafka_script 
+        bash ./Scripts/kafka_script 
     networks:
       - apache_kafka
     ports:
@@ -78,6 +79,46 @@ services:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
       SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: 'zookeeper:2181'
 
+  connect:
+    image: confluentinc/cp-kafka-connect-base:6.2.0
+    build:
+      context: .
+      dockerfile: Dockerfile.connect
+    hostname: connect
+    container_name: connect
+    networks:
+      - apache_kafka
+    depends_on:
+      - broker
+      - zookeeper
+    ports:
+      - "8083:8083"
+    entrypoint:
+      - bash
+      - -c
+      - |
+        echo 'Zzzzzz. . .'
+        sleep 40
+        # below is for debugging
+        # sleep 20
+      #   # Need to replace this with a new Base Image
+      #   confluent-hub install --no-prompt #NEED CONNECT DRIVER HERE
+      #   /etc/confluent/docker/run
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: 'broker:9092'
+      CONNECT_GROUP_ID: mysql
+      CONNECT_CONFIG_STORAGE_TOPIC: _connect_config
+      CONNECT_OFFSET_STORAGE_TOPIC: _connect_offset
+      CONNECT_STATUS_STORAGE_TOPIC: _connect_status
+      CONNECT_CONFIG_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_REPLICATION_FACTOR: 1
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: 'http://localhost:8081'
+      CONNECT_KEY_CONVERTER: 'org.apache.kafka.connect.storage.StringConverter'
+      CONNECT_VALUE_CONVERTER: 'io.confluent.connect.avro.AvroConverter'
+      CONNECT_REST_ADVERTISED_HOST_NAME: 'localhost'
+
+
   # control-center:
   #   image: confluentinc/cp-enterprise-control-center:6.2.0
   #   hostname: control-center
@@ -105,10 +146,10 @@ services:
     networks:
      - apache_kafka
     volumes:
-     - root-test:/var/lib/mysql
+     - root-access:/var/lib/mysql
     environment:
       MYSQL_ROOT_PASSWORD: secret
       MYSQL_DATABASE: todos
 
 volumes:
-  root-test:
+  root-access:
