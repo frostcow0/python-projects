@@ -7,3 +7,6 @@ temp2.py
 *.csv
 /webscraping/Lib
 /flask_test/Lib
+/apache_kafka/Lib
+/cybernetics/Lib
+/db_search/Lib

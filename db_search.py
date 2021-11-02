@@ -897,7 +897,8 @@ def init():
 config = Config()
 db_ref = {}
 
-init()
+if __name__=='__main__':
+    init()
+    quit()
 
 #C:\app\client\Administrator\product\18.0.0\client_1\network\admin\tnsnames.ora
-quit()
