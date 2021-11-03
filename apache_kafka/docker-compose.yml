@@ -94,15 +94,16 @@ services:
       - zookeeper
     ports:
       - "8083:8083"
-    # entrypoint:
-    #   - bash
-    #   - -c
-    #   - |
-    #     echo 'Zzzzzz. . .'
-    #     sleep 40
-    #     # below is for debugging
-    #     # sleep 20
-    #     bash ./Scripts/connect_script
+    entrypoint:
+      - bash
+      - -c
+      - |
+        echo 'Zzzzzz. . .'
+        # sleep 40
+        # below is for debugging
+        sleep 20
+        # echo 'tehe'
+        /etc/confluent/docker/run
       #   # Need to replace this with a new Base Image
       #   confluent-hub install --no-prompt #NEED CONNECT DRIVER HERE
     environment:

@@ -39,8 +39,8 @@ def send_record(args):
             'humidity': int(split_incoming_data[1]),
             'moisture': int(split_incoming_data[2]),
             'light': bool(split_incoming_data[3]) }
-    except Exception as e:
-        print('** Error Creating Dict of Data: ', e)
+    except Exception as error:
+        print('** Error Creating Dict of Data: ', error)
 
     print(f'Producing data records to topic {topic}. ^C to exit.')
     producer.poll(1)
