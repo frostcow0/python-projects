@@ -1,0 +1,9 @@
+# syntax=docker/dockerfile:1
+
+FROM mysql:5.7
+
+RUN rm -rf /docker-entrypoint-initdb.d/init.sql
+ADD ./Scripts/init.sql /docker-entrypoint-initdb.d/init.sql
+RUN chmod -R 775 /docker-entrypoint-initdb.d
+
+ENV MYSQL_ROOT_PASSWORD capstone

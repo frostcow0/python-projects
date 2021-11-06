@@ -1,3 +1,4 @@
+#!/bin/bash
 # Launch Kafka Connect
 /etc/confluent/docker/run &
 #
@@ -9,8 +10,22 @@ while : ; do
   if [ $$curl_status -eq 200 ] ; then
     break
   fi
-  sleep 5 
+  sleep 5
 done
+
+curl -X POST \
+  -H "Content-Type: application/json" \
+    --data '{ 
+        "name": "quickstart-jdbc-sink", 
+        "config": { 
+            "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector", 
+            "tasks.max": 1, 
+            "connection.url": "jdbc:mysql://127.0.0.1:3306/root_access?user=cmst&password=agroponics", 
+            "mode": "incrementing", 
+            "incrementing.column.name": "id", 
+            "timestamp.column.name": "datetime", 
+            "topic.prefix": "_connect_", 
+            "poll.interval.ms": 1000 } }'
 
 # This needs swapped with a mySQL Sink
 # echo -e "\n--\n+> Creating Data Generator source"

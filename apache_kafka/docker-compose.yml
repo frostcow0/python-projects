@@ -9,6 +9,7 @@ services:
     image: confluentinc/cp-zookeeper:6.2.0
     hostname: zookeeper
     container_name: zookeeper
+    restart: unless-stopped
     networks:
       - apache_kafka
     environment:
@@ -19,6 +20,7 @@ services:
     image: confluentinc/cp-kafka:6.2.0
     hostname: broker
     container_name: broker
+    restart: unless-stopped
     networks:
       - apache_kafka
     ports:
@@ -47,7 +49,7 @@ services:
       - |
         echo '-----------------------------------------------'
         echo 'Stalling for the homies...'
-        # sleep 30
+        sleep 30
         echo 'Bootin up, babe'
         bash ./Scripts/kafka_script 
     networks:
@@ -68,6 +70,7 @@ services:
     image: confluentinc/cp-schema-registry:6.2.0
     hostname: schema-registry
     container_name: schema-registry
+    restart: unless-stopped
     networks:
       - apache_kafka
     depends_on:
@@ -80,12 +83,12 @@ services:
       SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: 'zookeeper:2181'
 
   connect:
-    image: confluentinc/cp-kafka-connect-base:6.2.0
     build:
       context: .
       dockerfile: Dockerfile.connect
     hostname: connect
     container_name: connect
+    restart: unless-stopped
     working_dir: /apache_kafka
     networks:
       - apache_kafka
@@ -99,9 +102,9 @@ services:
       - -c
       - |
         echo 'Zzzzzz. . .'
-        # sleep 40
+        sleep 40
         # below is for debugging
-        sleep 20
+        # sleep 20
         # echo 'tehe'
         /etc/confluent/docker/run
       #   # Need to replace this with a new Base Image
@@ -119,7 +122,6 @@ services:
       CONNECT_KEY_CONVERTER: 'org.apache.kafka.connect.storage.StringConverter'
       CONNECT_VALUE_CONVERTER: 'io.confluent.connect.avro.AvroConverter'
       CONNECT_REST_ADVERTISED_HOST_NAME: 'localhost'
-
 
   # control-center:
   #   image: confluentinc/cp-enterprise-control-center:6.2.0
@@ -143,15 +145,19 @@ services:
   #     CONFLUENT_METRICS_TOPIC_REPLICATION: 1
 
   mysql:
-    image: mysql:5.7
+    build:
+      context: .
+      dockerfile: Dockerfile.db
     container_name: mysql
+    restart: unless-stopped
     networks:
      - apache_kafka
     volumes:
      - root-access:/var/lib/mysql
     environment:
-      MYSQL_ROOT_PASSWORD: secret
-      MYSQL_DATABASE: todos
+      MYSQL_PASSWORD: agroponics
+      MYSQL_USER: cmst
+      MYSQL_DATABASE: root_access
 
 volumes:
   root-access:
