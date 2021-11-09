@@ -19,7 +19,7 @@ def print_indent_nice(to_print:list) -> None:
 def del_topic(adminclient:AdminClient, topics:list) -> None:
     """ Delete topics """
     futures = adminclient.delete_topics(topics, operation_timeout = 30)
-    for topic, future in futures.items(): # tpc is topic b/c topic is in use
+    for topic, future in futures.items():
         try:
             future.result()
             print(f'\t\tDeleted topic {topic}')
@@ -32,7 +32,7 @@ def create_topics(adminclient:AdminClient, topics:list) -> None:
         num_partitions=PARTITIONS,
         replication_factor=1) for topic in topics if '_connect' not in topic]
     connect_topics = [NewTopic(topic,
-        num_partitions=1,
+        num_partitions=CONNECT_PARTITIONS,
         replication_factor=1) for topic in topics if '_connect' in topic]
     if connect_topics:
         new_topics.extend(connect_topics)
