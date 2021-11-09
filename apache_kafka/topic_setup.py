@@ -9,6 +9,7 @@ from utils.parse_command_line_args import topic_parse_command_line_args
 
 # Global var for creating topics & checking our main topic
 PARTITIONS = 3
+CONNECT_PARTITIONS = 1
 
 def print_indent_nice(to_print:list) -> None:
     """ Decorator for printing lists of things """
@@ -71,6 +72,7 @@ def set_topic_config(adminclient:AdminClient, resource:ConfigResource) -> dict:
 def check_topic_config(adminclient:AdminClient, topic:TopicMetadata) -> None:
     """ Checks topic's config """
     print(f'\t\tPulling config for topic {topic.topic}. . .')
+    partitions = len(topic.partitions)
     if '_connect' in topic.topic: # Specific to Kafka Connect's topic needs
         correct_config = {
             'cleanup.policy': 'compact' }
@@ -88,10 +90,11 @@ def check_topic_config(adminclient:AdminClient, topic:TopicMetadata) -> None:
         except Exception as error:
             print('\t\t**Error setting config for topic '
             f'{topic.topic}: ', error)
+        if partitions != CONNECT_PARTITIONS:
+            print(f'\tInsufficient partitions ({partitions})... recreating topic {topic.topic}.')
     else:
-        partitions = len(topic.partitions)
         if partitions != PARTITIONS:
-            print(f'\tInsufficient partitions ({partitions})... recreating topic.')
+            print(f'\tInsufficient partitions ({partitions})... recreating topic {topic.topic}.')
 
 def check_if_topics_exist(topics:list, all_topics:list) -> list:
     """ Check if topics exist. Returns list of topics that don't exist. """
