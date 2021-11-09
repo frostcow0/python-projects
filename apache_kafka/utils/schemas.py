@@ -1,5 +1,3 @@
-from confluent_kafka import avro, KafkaError
-from confluent_kafka.admin import AdminClient, NewTopic
 from uuid import uuid4
 
 data_schema = '''
@@ -47,20 +45,6 @@ class Data(object):
         self.moisture = moisture
         self.light = light
 
-    # @staticmethod
-    # def dict_to_data(obj, ctx):
-    #     return Data(obj['data'])
-
-    # @staticmethod
-    # def data_to_dict(data, ctx):
-    #     return Data.to_dict(data)
-
-    # def to_dict(self):
-    #     return dict(light = self.light,
-    #                 moisture = self.moisture,
-    #                 humidity = self.humidity,
-    #                 temperature = self.temperature)
-
 def data_to_dict(data, ctx):
     '''
     Returns a dict representation of a Data instance for serialization.
@@ -93,36 +77,3 @@ def dict_to_data(obj, ctx):
                 humidity = obj['humidity'],
                 moisture = obj['moisture'],
                 light = obj['light'])
-
-environment_schema = '''
-{
-    "namespace": "howdyworld",
-    "type": "record",
-    "name": "Environment",
-    "fields": [
-        {
-            "name": "name",
-            "type": "string"
-        }
-    ]
-}
-'''
-
-class Environment(object):
-    
-    __slots__ = ['name', 'id']
-
-    def __init__(self, name=None):
-        self.name = name
-        self.id = uuid4()
-
-    @staticmethod
-    def dict_to_environment(obj, ctx):
-        return Environment(obj['name'])
-
-    @staticmethod
-    def environment_to_dict(name, ctx):
-        return Environment.to_dict(name)
-
-    def to_dict(self):
-        return dict(name=self.name)
