@@ -23,7 +23,7 @@ CREATE TABLE sensor_data (
     PRIMARY KEY(id)
 );
 
-CREATE TABLE metrics (
+CREATE TABLE daily_metrics (
     id int NOT NULL, 
     envId smallint NOT NULL,
     dateProduced datetime NOT NULL,
