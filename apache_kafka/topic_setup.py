@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
-from confluent_kafka import admin
 from confluent_kafka.admin import AdminClient, ConfigResource, NewTopic, TopicMetadata
-from time import sleep
 
 from utils.parse_command_line_args import topic_parse_command_line_args
 
