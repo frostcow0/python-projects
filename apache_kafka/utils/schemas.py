@@ -10,7 +10,7 @@ DATA_SCHEMA = '''
         },
         {
             "name": "whenCollected",
-            "type": "datetime"
+            "type": "string"
         },
         {
             "name": "timeLightOnMins",
