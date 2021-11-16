@@ -12,7 +12,7 @@ CREATE TABLE environments (
 );
 
 CREATE TABLE sensor_data (
-    id int NOT NULL,
+    id int NOT NULL AUTO_INCREMENT,
     envId smallint NOT NULL,
     whenCollected datetime NOT NULL, 
     timeLightOnMins smallint,
