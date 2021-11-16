@@ -7,7 +7,15 @@ data_schema = '''
     "name": "Data",
     "fields": [
         {
-            "name": "temperature",
+            "name": "envId",
+            "type": "int"
+        },
+        {
+            "name": "whenCollected",
+            "type": "datetime"
+        },
+        {
+            "name": "timeLightOnMins",
             "type": "int"
         },
         {
@@ -15,37 +23,52 @@ data_schema = '''
             "type": "int"
         },
         {
-            "name": "moisture",
+            "name": "soilMoisture",
             "type": "int"
         },
         {
-            "name": "light",
-            "type": "boolean"
+            "name": "temperature",
+            "type": "int"
+        },
+        {
+            "name": "waterConsumption",
+            "type": "int"
         }
     ]
 }
 '''
 
 class Data(object):
-    '''
+    """
     Data record
 
     Args:
-        temperature (int): Temperature from sensor
+        **EXPECTS A DICTIONARY WITH THESE KEY-VALUE MAPS**
+        
+        envId (int): Unique envId for required environment variables
+
+        whenCollected (datetime): When the data was collected
+
+        timeLightOnMins (int): Minutes the light was on since last record
 
         humidity (int): Humidity from sensor
 
-        moisture (int): Moisture from sensor
+        soilMoisture (int): Moisture from sensor
 
-        light (boolean): Light from sensor
-    '''
-    def __init__(self, temperature, humidity, moisture, light):
-        self.temperature = temperature
-        self.humidity = humidity
-        self.moisture = moisture
-        self.light = light
+        temperature (int): Temperature from sensor
 
-def data_to_dict(data, ctx):
+        waterConsumption (int): Amount of water used since last record
+    """
+    def __init__(self, incomingData):
+        self.envId = incomingData['envId']
+        self.whenCollected = incomingData['whenCollected']
+        self.timeLightOnMins = incomingData['timeLightOnMins']
+        self.humidity = incomingData['humidity']
+        self.soilMoisture = incomingData['soilMoisture']
+        self.temperature = incomingData['temperature']
+        self.waterConsumption = incomingData['waterConsumption']
+
+def data_to_dict(data:Data, ctx):
     '''
     Returns a dict representation of a Data instance for serialization.
 
@@ -57,11 +80,14 @@ def data_to_dict(data, ctx):
     Returns:
         dict: Dict populated with data attributes to be serialized.
     '''
-    return dict(light = data.light,
-                    moisture = data.moisture,
-                    humidity = data.humidity,
-                    temperature = data.temperature)
-        
+    return dict(envId = data.envId,
+                whenCollected = data.whenCollected,
+                timeLightOnMins = data.timeLightOnMins,
+                humidity = data.humidity,
+                soilMoisture = data.soilMoisture,
+                temperature = data.temperature,
+                waterConsumption = data.waterConsumption)
+
 def dict_to_data(obj, ctx):
     '''
     Converts object literal(dict) to a Data instance.
@@ -73,7 +99,10 @@ def dict_to_data(obj, ctx):
     '''
     if obj is None:
         return None
-    return Data(temperature = obj['temperature'],
+    return Data(envId = obj['envId'],
+                whenCollected = obj['whenCollected'],
+                timeLightOnMins = obj['timeLightOnMins'],
                 humidity = obj['humidity'],
-                moisture = obj['moisture'],
-                light = obj['light'])
+                soilMoisture = obj['soilMoisture'],
+                temperature = obj['temperature'],
+                waterConsumption = obj['waterConsumption'])

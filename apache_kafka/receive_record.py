@@ -47,10 +47,7 @@ def receive_record(args):
             data = msg.value()
             if data is not None:
                 print(f'Data record {msg.key()}:\n'
-                f'\ttemperature: {data.temperature}\n'
-                f'\thumidity: {data.humidity}\n'
-                f'\tmoisture: {data.moisture}\n'
-                f'\tlight: {data.light}')
+                f'\tValues: {data}')
         except KeyboardInterrupt:
             break
     print('\nClosing consumer.')

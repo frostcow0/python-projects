@@ -1,12 +1,12 @@
 CREATE DATABASE IF NOT EXISTS root_access;
 USE root_access;
 
+CREATE USER 'cmst'@'localhost' IDENTIFIED BY 'agroponics';
+
 -- minLight may need changed depending what we do with our light sensor
 CREATE TABLE environments (
     envId smallint NOT NULL,
     plant varchar(40),
-    minLight smallint,
-    maxMoist tinyint,
     minMoist tinyint,
     PRIMARY KEY(envId)
 );
@@ -15,7 +15,7 @@ CREATE TABLE sensor_data (
     id int NOT NULL,
     envId smallint NOT NULL,
     whenCollected datetime NOT NULL, 
-    light smallint,
+    timeLightOnMins smallint,
     humidity smallint,
     soilMoisture smallint,
     temperature smallint,
@@ -27,8 +27,8 @@ CREATE TABLE daily_metrics (
     id int NOT NULL, 
     envId smallint NOT NULL,
     dateProduced datetime NOT NULL,
-    waterConsumption smallint,
-    totalTimeLightsOnMins smallint,
+    totalWaterConsumption smallint,
+    totalTimeLightOnMins smallint,
     PRIMARY KEY (id)
 );
 
@@ -41,5 +41,5 @@ CREATE TABLE IF NOT EXISTS email_pass (
 ALTER TABLE sensor_data
 ADD FOREIGN KEY (envId) REFERENCES environments(envId);
 
-ALTER TABLE metrics
+ALTER TABLE daily_metrics
 ADD FOREIGN KEY (envId) REFERENCES environments(envId);

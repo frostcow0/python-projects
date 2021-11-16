@@ -30,15 +30,18 @@ def send_record(args):
     producer = SerializingProducer(producer_config)
 
     split_incoming_data = args.record_value.split(',')
-    if not len(split_incoming_data) == 4: # Data Format Check
+    if not len(split_incoming_data) == 7: # Data Format Check
         print('** Error: Insufficient Incoming Data: ', split_incoming_data)
         raise Exception
     try: # Data Format Check
         incoming_data = {
-            'temperature': int(split_incoming_data[0]),
-            'humidity': int(split_incoming_data[1]),
-            'moisture': int(split_incoming_data[2]),
-            'light': bool(split_incoming_data[3]) }
+            'envId': int(split_incoming_data[0]),
+            'whenCollected': str(split_incoming_data[1]),
+            'timeLightOnMins': int(split_incoming_data[2]),
+            'humidity': int(split_incoming_data[3]),
+            'soilMoisture': int(split_incoming_data[4]),
+            'temperature': int(split_incoming_data[5]),
+            'waterConsumption': int(split_incoming_data[6]) }
     except Exception as error:
         print('** Error Creating Dict of Data: ', error)
 
@@ -46,11 +49,8 @@ def send_record(args):
     producer.poll(1)
     try:
         key = args.record_key if args.record_key else str(uuid4())
-        data_object = Data(incoming_data['temperature'],
-                        incoming_data['humidity'],
-                        incoming_data['moisture'],
-                        incoming_data['light'])
-        print(f'\t-Producing Avro record. . .')
+        data_object = Data(incoming_data)
+        print('\t-Producing Avro record. . .')
         producer.produce(topic = topic,
                         key = key,
                         value = data_object,
@@ -66,8 +66,8 @@ def delivery_report(err, msg):
         print(f'\t-Failed to deliver message: {err}')
     else:
         print(f'\t-Produced record to topic {msg.topic()}, '
-        'partition {msg.partition()}0, '
-        '@ offset {msg.offset()}')
+        f'partition {msg.partition()}, '
+        f'@ offset {msg.offset()}')
 
 
 if __name__ == "__main__":
