@@ -6,7 +6,7 @@ from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroDeserializer
 
 from utils.parse_command_line_args import receive_parse_command_line_args
-from utils.schemas import data_schema, dict_to_data
+from utils.schemas import DATA_SCHEMA, dict_to_data
 
 
 def receive_record(args):
@@ -19,7 +19,7 @@ def receive_record(args):
 
     avro_deserializer = AvroDeserializer(
         schema_registry_client,
-        data_schema,
+        DATA_SCHEMA,
         dict_to_data)
 
     string_deserializer = StringDeserializer('utf_8')

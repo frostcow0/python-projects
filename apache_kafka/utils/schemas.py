@@ -1,6 +1,4 @@
-from uuid import uuid4
-
-data_schema = '''
+DATA_SCHEMA = '''
 {
     "namespace": "sensors",
     "type": "record",
@@ -44,7 +42,7 @@ class Data(object):
 
     Args:
         **EXPECTS A DICTIONARY WITH THESE KEY-VALUE MAPS**
-        
+
         envId (int): Unique envId for required environment variables
 
         whenCollected (datetime): When the data was collected
@@ -99,10 +97,11 @@ def dict_to_data(obj, ctx):
     '''
     if obj is None:
         return None
-    return Data(envId = obj['envId'],
-                whenCollected = obj['whenCollected'],
-                timeLightOnMins = obj['timeLightOnMins'],
-                humidity = obj['humidity'],
-                soilMoisture = obj['soilMoisture'],
-                temperature = obj['temperature'],
-                waterConsumption = obj['waterConsumption'])
+    return Data(obj)
+    # return Data(envId = obj['envId'],
+    #             whenCollected = obj['whenCollected'],
+    #             timeLightOnMins = obj['timeLightOnMins'],
+    #             humidity = obj['humidity'],
+    #             soilMoisture = obj['soilMoisture'],
+    #             temperature = obj['temperature'],
+    #             waterConsumption = obj['waterConsumption'])

@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 
+from uuid import uuid4
 from confluent_kafka import SerializingProducer
 from confluent_kafka.serialization import StringSerializer
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroSerializer
 
 from utils.parse_command_line_args import send_parse_command_line_args
-from utils.schemas import data_schema, data_to_dict, uuid4, Data
+from utils.schemas import DATA_SCHEMA, data_to_dict, Data
 
 
 def send_record(args):
@@ -19,7 +20,7 @@ def send_record(args):
 
     avro_serializer = AvroSerializer(
         schema_registry_client,
-        data_schema,
+        DATA_SCHEMA,
         data_to_dict)
 
     producer_config = {
