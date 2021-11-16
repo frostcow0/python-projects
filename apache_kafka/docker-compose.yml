@@ -37,9 +37,7 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
 
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile.kafka
+    image: root-access/app:1.0.0
     container_name: app
     depends_on:
       - broker
@@ -47,23 +45,24 @@ services:
       - bash
       - -c
       - |
-        echo '-----------------------------------------------'
-        echo 'Stalling for the homies...'
+        echo 'Giving broker time to start...'
         sleep 30
-        echo 'Bootin up, babe'
         bash ./Scripts/kafka_script 
     networks:
       - apache_kafka
     ports:
       - 3000:3000
     working_dir: /apache_kafka
+    secrets:
+      - mysqlUserSecret
+      - mysqlPassSecret
     volumes:
-     - .:/app
+      - .:/app
     environment:
       MYSQL_HOST: mysql
-      MYSQL_USER: root
-      MYSQL_PASSWORD: secret
-      MYSQL_DB: todos
+      MYSQL_USER: ./run/secrets/mysqlUserSecret
+      MYSQL_PASSWORD: ./run/secrets/mysqlPassSecret
+      MYSQL_DB: root_access
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:9092,PLAINTEXT_HOST://localhost:29092
 
   schema-registry:
@@ -83,13 +82,12 @@ services:
       SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: 'zookeeper:2181'
 
   connect:
-    build:
-      context: .
-      dockerfile: Dockerfile.connect
+    image: root-access/connect:1.0.0
     hostname: connect
     container_name: connect
     restart: unless-stopped
-    working_dir: /apache_kafka
+    secrets:
+        - connectScriptSecret
     networks:
       - apache_kafka
     depends_on:
@@ -103,12 +101,9 @@ services:
       - |
         echo 'Zzzzzz. . .'
         sleep 40
-        # below is for debugging
-        # sleep 20
-        # echo 'tehe'
-        /etc/confluent/docker/run
-      #   # Need to replace this with a new Base Image
-      #   confluent-hub install --no-prompt #NEED CONNECT DRIVER HERE
+        echo 'Starting Connect'
+        # sleep 400
+        /run/secrets/connectScriptSecret
     environment:
       CONNECT_BOOTSTRAP_SERVERS: 'broker:9092'
       CONNECT_GROUP_ID: mysql
@@ -122,42 +117,36 @@ services:
       CONNECT_KEY_CONVERTER: 'org.apache.kafka.connect.storage.StringConverter'
       CONNECT_VALUE_CONVERTER: 'io.confluent.connect.avro.AvroConverter'
       CONNECT_REST_ADVERTISED_HOST_NAME: 'localhost'
-
-  # control-center:
-  #   image: confluentinc/cp-enterprise-control-center:6.2.0
-  #   hostname: control-center
-  #   container_name: control-center
-  #   networks:
-  #     - apache_kafka
-  #   depends_on:
-  #     - zookeeper
-  #     - broker
-  #     - schema-registry
-  #   ports:
-  #     - "9021:9021"
-  #   environment:
-  #     CONTROL_CENTER_BOOTSTRAP_SERVERS: 'broker:9092'
-  #     CONTROL_CENTER_ZOOKEEPER_CONNECT: 'zookeeper:2181'
-  #     CONTROL_CENTER_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
-  #     CONTROL_CENTER_REPLICATION_FACTOR: 1
-  #     CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS: 1
-  #     CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
-  #     CONFLUENT_METRICS_TOPIC_REPLICATION: 1
-
+      CONNECT_HOST: 'localhost'
+      CONNECT_PLUGIN_PATH: '/usr/share/java,/usr/share/confluent-hub-components'
+  
   mysql:
-    build:
-      context: .
-      dockerfile: Dockerfile.db
+    image: root-access/db:1.0.0
     container_name: mysql
+    hostname: mysql
     restart: unless-stopped
     networks:
      - apache_kafka
     volumes:
      - root-access:/var/lib/mysql
+    ports:
+      - "23306:23306"
     environment:
-      MYSQL_PASSWORD: agroponics
+      MYSQL_ROOT_PASSWORD: secret
       MYSQL_USER: cmst
+      MYSQL_PASSWORD: agroponics
       MYSQL_DATABASE: root_access
 
 volumes:
   root-access:
+    name: root-access
+
+secrets:
+  connectScriptSecret:
+    file: ./Scripts/connect_script
+  mysqlUserSecret:
+    file: ./db/user.txt
+  mysqlPassSecret:
+    file: ./db/pass.txt
+  mysqlRootSecret:
+    file: ./db/root.txt
