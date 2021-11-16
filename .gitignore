@@ -8,5 +8,7 @@ temp2.py
 /webscraping/Lib
 /flask_test/Lib
 /apache_kafka/Lib
+/apache_kafka/db
+/apache_kafka/jars
 /cybernetics/Lib
 /db_search/Lib
