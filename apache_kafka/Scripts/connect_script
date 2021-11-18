@@ -2,13 +2,11 @@
 # Launch Kafka Connect
 /etc/confluent/docker/run &
 #
-# Wait for Kafka Connect listener
-user=$(run/secrets/myUserSecret)
-pass=$(run/secrets/mysqlPassSecret)
-
+# Install mysql connector driver
 wget https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-8.0.27.tar.gz && \
 tar -xzvf mysql-connector-java-8.0.27.tar.gz
-
+# 
+# Wait for Kafka Connect listener
 echo "Waiting for Kafka Connect to start listening on localhost ⏳"
 while : ; do
   curl_status=$(curl -s -o /dev/null -w %{http_code} http://localhost:8083/connectors)
@@ -18,9 +16,6 @@ while : ; do
   fi
   sleep 5
 done
-
-# "pk.mode": "record_key", 
-# "pk.fields": "id", 
 
 curl -X POST \
   -H "Content-Type: application/json" \
@@ -43,20 +38,3 @@ curl -X POST \
             "poll.interval.ms": 1000 } }' \
 http://$CONNECT_HOST:8083/connectors
 sleep infinity
-
-# Works, but docker-compose entrypoint restarts on 409 Conflict return
-
-# curl -s -X GET http://$CONNECT_HOST:8083/connectors/mysql-jdbc-sink/status
-
-# This needs swapped with a mySQL Sink
-# echo -e "\n--\n+> Creating Data Generator source"
-# curl -s -X PUT -H  "Content-Type:application/json" http://localhost:8083/connectors/source-datagen-01/config \
-#     -d '{
-#     "connector.class": "io.confluent.kafka.connect.datagen.DatagenConnector",
-#     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
-#     "kafka.topic": "sensor_data",
-#     "max.interval":750,
-#     "quickstart": "ratings",
-#     "tasks.max": 1
-# }'
-# sleep infinity
