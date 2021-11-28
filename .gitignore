@@ -11,3 +11,5 @@ temp2.py
 */pyvenv.cfg
 */Scripts
 */Include
+*/__pychache__
+*.pyc
