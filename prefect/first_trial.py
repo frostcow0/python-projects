@@ -2,7 +2,7 @@ import prefect
 import pandas as pd
 from timeit import Timer
 import datatable as dt
-from prefect import task, Flow
+from prefect import task, Flow, Parameter
 from prefect.engine.state import State
 from pandas import DataFrame
 
@@ -36,25 +36,24 @@ def import_data() -> DataFrame:
     return data
 
 @task
-def print_frame_head(frame:DataFrame) -> None:
-    print(frame.head())
+def print_frame_head(frame:DataFrame, debug) -> None:
+    if debug:
+        print(frame.head())
 
 @task # Not tested
 def reduce_mem(frame:DataFrame) -> DataFrame:
     return reduce_memory_usage(frame)
 
 with Flow("test-data-flow-1") as flow:
+    debug = Parameter("debug", default=0)
     df = import_data()
-    p = print_frame_head(df, upstream_tasks=[df])
+    p = print_frame_head(df, debug=debug, upstream_tasks=[df])
 
-    # print(type(df))
-    # head = df.head()
-    # print(head)
+def debug_flow():
+    return flow.run(parameters=dict(debug=1))
 
-def run_flow():
-    state = flow.run()
-
-state = flow.run()
+# state = flow.run()
+state = debug_flow()
 print_results(state)
 
 # time1 = Timer('run_flow()',
