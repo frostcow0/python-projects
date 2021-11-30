@@ -41,8 +41,9 @@ def reduce_mem(frame:DataFrame) -> DataFrame:
 with Flow("test-data-flow-1") as flow:
     debug = Parameter("debug", default=0)
     df = import_data()
-    p = print_frame_head(df, debug=debug, upstream_tasks=[df])
-    minimized = reduce_mem(df)
+    print_frame_head(df, debug=debug,
+        upstream_tasks=[df])
+    reduce_mem(df)
 
 def debug_flow() -> None:
     """ Runs flow in debug mode. """
