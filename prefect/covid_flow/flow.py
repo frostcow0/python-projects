@@ -2,8 +2,8 @@
 import io
 import json
 import urllib.request as rq
-from typing import Any, Dict
-from datetime import timedelta
+from typing import Any
+from datetime import timedelta, date
 
 # Third Party
 import pandas as pd
@@ -42,6 +42,12 @@ def print_data(data:Any) -> None:
     """Only prints to the local output"""
     print(data)
 
+@task
+def save_filtered_covid_data(data:pd.DataFrame) -> None:
+    """Saves dataframe to csv"""
+    today = date.today()
+    data.to_csv(f'../data/filtered-covid-latest-{today}.csv', index=False)
+
 def create_flow() -> Flow:
     """Creates and returns flow object"""
     # Haven't used different executors enough to know the difference
@@ -52,6 +58,8 @@ def create_flow() -> Flow:
         filtered_covid_df = filter_data(covid_df, country)
 
         print_data(filtered_covid_df)
+
+        save_filtered_covid_data(filtered_covid_df)
 
     return flow
 
