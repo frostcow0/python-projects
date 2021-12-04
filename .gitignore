@@ -13,3 +13,4 @@ temp2.py
 */Include
 */__pychache__
 *.pyc
+/prefect/data
