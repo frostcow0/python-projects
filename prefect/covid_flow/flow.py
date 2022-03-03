@@ -114,7 +114,7 @@ def extract_full_country_data(data:pd.DataFrame) -> pd.DataFrame:
 @task
 def extract_label_column(data:pd.DataFrame, column:str) -> pd.Series:
     """Create a copy of the column and return it as a Series"""
-    series = data.copy()[column].rename('')
+    series = data[column].copy().rename('')
     return series
 
 @task

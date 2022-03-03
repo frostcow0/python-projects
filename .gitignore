@@ -14,3 +14,5 @@ temp2.py
 */__pychache__
 *.pyc
 /prefect/data
+
+*.db
