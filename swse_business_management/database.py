@@ -18,6 +18,29 @@ class Database:
             query = f"SELECT * FROM {table}"
             try:
                 df = pd.read_sql(query, self.con)
+                logging.info(" Successfully read from %s" % table)
+                return df
+            except Exception as error:
+                logging.error(" **Error reading from table: %s" % error)
+
+    def get_inventory(self) -> pd.DataFrame:
+        """Selects * from inventory"""
+        if self.con:
+            query = f"SELECT * FROM inventory"
+            try:
+                df = pd.read_sql(query, self.con)
+                logging.info(" Successfully read from inventory")
+                return df
+            except Exception as error:
+                logging.error(" **Error reading from table: %s" % error)
+    
+    def get_transactions(self) -> pd.DataFrame:
+        """Selects * from transactions"""
+        if self.con:
+            query = f"SELECT * FROM transactions"
+            try:
+                df = pd.read_sql(query, self.con)
+                logging.info(" Successfully read from transactions")
                 return df
             except Exception as error:
                 logging.error(" **Error reading from table: %s" % error)
@@ -30,5 +53,17 @@ class Database:
                     if_exists = 'append', index=False)
                 return result
             except Exception as error:
-                logging.error(" **Error reading from table: %s" % error)
-            
+                logging.error(" **Error writing to table: %s" % error)
+
+    def store_transaction(self, data:list) -> None:
+        """Stores the data in transactions"""
+        if self.con:
+            try:
+                columns = ['trans_type', 'client_name', 'item',
+                    'quantity', 'price']
+                df = pd.DataFrame(data=data, columns=columns)
+                print(df.head())
+                result = df.to_sql('transactions', self.con,
+                    if_exists = 'append', index=False)
+            except Exception as error:
+                logging.error(" **Error writing to table: %s" % error)
