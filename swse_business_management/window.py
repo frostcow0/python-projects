@@ -43,7 +43,7 @@ class App(Frame):
     def inventory_screen(self):
         """Loads inventory screen"""
         self.clear()
-        self.new_label('See the Inventory listed blow', 15
+        self.new_label('Inventory', 15
             ).grid(row=0, column=0, columnspan=3)
         back_row = 2
         try:
@@ -64,19 +64,24 @@ class App(Frame):
     def transaction_screen(self):
         """Loads transaction screen"""
         self.clear()
-        self.new_label('See the Transaction log below', 15
+        self.new_label('Transaction Log', 15
             ).grid(row=0, column=0, columnspan=4)
         back_row = 2
         try:
             for index, row in self.transactions.iterrows():
+                fg = "green"
                 for idx, column in enumerate(self.transactions.columns):
                     if column == "trans_type":
                         if row[column] == 0:
-                            pass # change color red
-                        else:
-                            pass # change color green
-                    self.new_label(row[column], 10
-                        ).grid(row=index+1, column=idx)
+                            fg = "red"
+                        continue
+                    if index == 0:
+                        ent = self.new_entry(column.upper(), "black")
+                        ent.config(state="readonly")
+                        ent.grid(row=1, column=idx-1)
+                    ent = self.new_entry(row[column], fg)
+                    ent.config(state="readonly")
+                    ent.grid(row=index+2, column=idx-1)
             if len(self.transactions.index) > back_row:
                 back_row = len(self.transactions.index)
         except AttributeError:
@@ -88,13 +93,16 @@ class App(Frame):
                     padx = 3, pady = 6,
                     width = 15,
                     command = self.new_transaction)
-        self.new_tran.grid(row=back_row,
-            column=0, columnspan=3)
+        self.new_tran.grid(row=back_row+2,
+            column=0, columnspan=4)
         self.widgets.append(self.new_tran)
         self.back_button(self.start_screen)
-        self.back.grid(row=back_row+1,
-            column=0, columnspan=3)
+        self.back.grid(row=back_row+3,
+            column=0, columnspan=4)
         self.set_background()
+
+        df = self.transactions.groupby(['item'])['quantity'].sum()
+        print(df.head())
 
     def new_transaction(self):
         """Adds a new transaction to the DataFrame"""
@@ -153,8 +161,15 @@ class App(Frame):
     def add_transaction(self, args=None):
         """Adds transaction info to database"""
         data = [self.trans_type.get(), self.c_name.get(),
-            self.item.get().upper(), int(self.quantity.get()),
-            int(self.price.get())]
+            self.item.get().upper()]
+        price = int(self.price.get())
+        quantity = int(self.quantity.get())
+        if self.trans_type.get() == 0:
+            price *= -1
+        else:
+            quantity *= -1
+        data.append(quantity)
+        data.append(price)
         logging.debug(" Submitted transaction data: %s " % data)
         self.db.store_transaction([data])
         self.refresh_transactions()
@@ -173,20 +188,46 @@ class App(Frame):
         for widget in self.widgets:
             widget.configure(bg="tan")
 
-    def new_label(self, text, textSize):
+    def new_label(self, text, textSize, fg=None):
         # from tkinter_tinkering.py
         '''
         Create a new label
 
         :param text What text the label displays
         :param textSize What size the text is
+        :param fg Define the foreground color, optional
         '''
-        self.label = Label(self,
+        if fg:
+            self.label = Label(self,
                     text = text,
-                    font = ('Veridian', textSize),
+                    font = ('Veridian', textSize, 'bold'),
+                    padx = 3, pady = 6,
+                    fg = fg)
+        else:
+            self.label = Label(self,
+                    text = text,
+                    font = ('Veridian', textSize, 'bold'),
                     padx = 3, pady = 6,)
         self.widgets.append(self.label)
         return self.label
+
+    def new_entry(self, text=None, fg=None):
+        '''
+        Create a new entry
+        '''
+        self.stringvar = StringVar(self, text)
+        if fg:
+            self.entry = Entry(self,
+                        width = 20,
+                        textvariable = self.stringvar,
+                        fg=fg,
+                        font = ('Veridian', 12, 'bold'),)
+        else:
+            self.entry = Entry(self,
+                        width = 20,
+                        textvariable = self.stringvar,)
+        self.widgets.append(self.entry)
+        return self.entry
 
     def back_button(self, cmd):
         # from tkinter_tinkering.py
