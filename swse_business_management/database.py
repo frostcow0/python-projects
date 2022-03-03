@@ -10,6 +10,7 @@ class Database:
     def __exit__(self) -> None:
         """Closes connection"""
         if self.con:
+            # self.con.commit()
             self.con.close()
 
     def select_all_from_table(self, table:str) -> pd.DataFrame:
@@ -51,7 +52,6 @@ class Database:
             try:
                 result = data.to_sql(table, self.con,
                     if_exists = 'append', index=False)
-                return result
             except Exception as error:
                 logging.error(" **Error writing to table: %s" % error)
 
