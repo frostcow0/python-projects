@@ -1,6 +1,5 @@
 # Third Party
 import logging
-from venv import create
 import pandas as pd
 
 # Proprietary
@@ -13,17 +12,19 @@ logging.basicConfig(level=logging.DEBUG)
 
 def main():
     db = Database(FILENAME)
-    inventory = db.select_all_from_table('inventory')
+    inventory = db.get_inventory()
+    transactions = db.get_transactions()
     data = {
-        "inventory": inventory
+        "inventory": inventory,
+        "transactions": transactions
     }
-    create_app("SWSE BM", data)
+    create_app("SWSE BM", data, db)
     pass
 
 def silly_store():
     db = Database(FILENAME)
     data = {
-        "name": ['spice', 'deathsticks'],
+        "item": ['spice', 'deathsticks'],
         "amount": [400, 50],
         "unit": ['lbs', 'sticks']
     }
