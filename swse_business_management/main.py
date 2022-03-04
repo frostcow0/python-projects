@@ -7,7 +7,7 @@ from window import create_app
 
 
 FILENAME = "swsebm.db"
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO) # swap to DEBUG
 
 def main():
     db = Database(FILENAME)
@@ -19,6 +19,6 @@ def example():
     transactions = db.get_transactions()
     create_app("Example DB", transactions, db)
 
-if __name__ == '__main__':
-    # main()
-    example()
+if __name__=="__main__":
+    main()
+    # example()
