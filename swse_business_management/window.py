@@ -48,13 +48,13 @@ class App(Frame):
             ).grid(row=0, column=0, columnspan=2)
         back_row = 2
         try:
+            inventory = self.transactions.groupby(['item'])['quantity'].sum()
             i = self.new_entry("ITEM", "black")
             i.config(state="readonly", justify="center")
             i.grid(row=1, column=0)
             q = self.new_entry("QUANTITY", "black")
             q.config(state="readonly", justify="center")
             q.grid(row=1, column=1)
-            inventory = self.transactions.groupby(['item'])['quantity'].sum()
             for index, item in enumerate(inventory.index):
                 ent = self.new_entry(item, "black")
                 ent.config(state="readonly")
@@ -67,10 +67,10 @@ class App(Frame):
         except AttributeError as error:
             logging.error(" **Error loading inventory: %s" % error)
             self.new_label('No Inventory yet', 12
-                ).grid(row=1, column=1)
+                ).grid(row=1, column=1, pady=5)
         self.back_button(self.start_screen)
         self.back.grid(row=back_row+2,
-            column=0, columnspan=2)
+            column=0, columnspan=2, pady=5)
         self.set_background()
 
     def transaction_screen(self):
@@ -100,7 +100,7 @@ class App(Frame):
         except AttributeError as error:
             logging.error(" **Error loading transactions: %s" % error)
             self.new_label('No Transactions yet', 12
-                ).grid(row=1, column=1)
+                ).grid(row=1, column=1, pady=5)
         self.new_tran = Button(self,
                     text = 'New Transaction',
                     font = ('Veridian', 10),
@@ -108,7 +108,7 @@ class App(Frame):
                     width = 15,
                     command = self.new_transaction)
         self.new_tran.grid(row=back_row+2,
-            column=0, columnspan=4)
+            column=0, columnspan=4, pady=5)
         self.widgets.append(self.new_tran)
         self.back_button(self.start_screen)
         self.back.grid(row=back_row+3,
@@ -167,6 +167,9 @@ class App(Frame):
         self.submit.grid(row=6, column=0, columnspan=3,
             pady=5)
         self.widgets.append(self.submit)
+        self.back_button(self.transaction_screen)
+        self.back.grid(row=7,
+            column=0, columnspan=3)
         self.set_background()
 
     def add_transaction(self, args=None):
