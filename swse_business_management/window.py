@@ -1,21 +1,21 @@
 # Third Party
 import logging
 from tkinter import *
+from pandas import DataFrame
 
 # Proprietary
 from database import Database
 
 
 class App(Frame):
-    def __init__(self, master, data:dict, db:Database):
+    def __init__(self, master, transactions:DataFrame, db:Database):
         Frame.__init__(self, master)
         self.configure(bg="tan")
         self.root = master
         self.db = db
         self.widgets = []
         self.grid(padx=20, pady=20)
-        self.inventory = data['inventory']
-        self.transactions = data['transactions']
+        self.transactions = transactions
 
     def start_screen(self):
         """Loads initial app screen"""
@@ -43,27 +43,40 @@ class App(Frame):
     def inventory_screen(self):
         """Loads inventory screen"""
         self.clear()
+        self.refresh_transactions()
         self.new_label('Inventory', 15
-            ).grid(row=0, column=0, columnspan=3)
+            ).grid(row=0, column=0, columnspan=2)
         back_row = 2
         try:
-            for index, row in self.inventory.iterrows():
-                self.new_label(row['item'], 10
-                    ).grid(row=index+1, column=0)
-                self.new_label(f"{row['quantity']} {row['unit']}", 10
-                    ).grid(row=index+1, column=1)
-            back_row = len(self.inventory.index)
-        except AttributeError:
+            i = self.new_entry("ITEM", "black")
+            i.config(state="readonly", justify="center")
+            i.grid(row=1, column=0)
+            q = self.new_entry("QUANTITY", "black")
+            q.config(state="readonly", justify="center")
+            q.grid(row=1, column=1)
+            inventory = self.transactions.groupby(['item'])['quantity'].sum()
+            for index, item in enumerate(inventory.index):
+                ent = self.new_entry(item, "black")
+                ent.config(state="readonly")
+                ent.grid(row=index+2, column=0)
+                quant = self.new_entry(inventory[item], "black")
+                quant.config(state="readonly")
+                quant.grid(row=index+2, column=1)
+            if len(inventory.index) > back_row:
+                back_row = len(inventory.index)
+        except AttributeError as error:
+            logging.error(" **Error loading inventory: %s" % error)
             self.new_label('No Inventory yet', 12
                 ).grid(row=1, column=1)
         self.back_button(self.start_screen)
-        self.back.grid(row=back_row,
-            column=1)
+        self.back.grid(row=back_row+2,
+            column=0, columnspan=2)
         self.set_background()
 
     def transaction_screen(self):
         """Loads transaction screen"""
         self.clear()
+        self.refresh_transactions()
         self.new_label('Transaction Log', 15
             ).grid(row=0, column=0, columnspan=4)
         back_row = 2
@@ -77,14 +90,15 @@ class App(Frame):
                         continue
                     if index == 0:
                         ent = self.new_entry(column.upper(), "black")
-                        ent.config(state="readonly")
+                        ent.config(state="readonly", justify="center")
                         ent.grid(row=1, column=idx-1)
                     ent = self.new_entry(row[column], fg)
                     ent.config(state="readonly")
                     ent.grid(row=index+2, column=idx-1)
             if len(self.transactions.index) > back_row:
                 back_row = len(self.transactions.index)
-        except AttributeError:
+        except AttributeError as error:
+            logging.error(" **Error loading transactions: %s" % error)
             self.new_label('No Transactions yet', 12
                 ).grid(row=1, column=1)
         self.new_tran = Button(self,
@@ -100,9 +114,6 @@ class App(Frame):
         self.back.grid(row=back_row+3,
             column=0, columnspan=4)
         self.set_background()
-
-        df = self.transactions.groupby(['item'])['quantity'].sum()
-        print(df.head())
 
     def new_transaction(self):
         """Adds a new transaction to the DataFrame"""
@@ -174,10 +185,6 @@ class App(Frame):
         self.db.store_transaction([data])
         self.refresh_transactions()
         self.transaction_screen()
-
-    def refresh_inventory(self):
-        """Pulls latest database info"""
-        self.inventory = self.db.get_inventory()
 
     def refresh_transactions(self):
         """Pulls latest database info"""
