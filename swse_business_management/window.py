@@ -81,20 +81,25 @@ class App(Frame):
             ).grid(row=0, column=0, columnspan=4)
         back_row = 2
         try:
-            for index, row in self.transactions.iterrows():
+            rev_trans = self.transactions.iloc[::-1]
+            counter = 0
+            for index, row in rev_trans.iterrows():
+                if counter == 8:
+                    break
                 fg = "green"
                 for idx, column in enumerate(self.transactions.columns):
                     if column == "trans_type":
                         if row[column] == 0:
                             fg = "red"
                         continue
-                    if index == 0:
+                    if counter == 0:
                         ent = self.new_entry(column.upper(), "black")
                         ent.config(state="readonly", justify="center")
                         ent.grid(row=1, column=idx-1)
                     ent = self.new_entry(row[column], fg)
                     ent.config(state="readonly")
-                    ent.grid(row=index+2, column=idx-1)
+                    ent.grid(row=counter+2, column=idx-1)
+                counter+=1
             if len(self.transactions.index) > back_row:
                 back_row = len(self.transactions.index)
         except AttributeError as error:
