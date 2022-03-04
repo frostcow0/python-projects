@@ -62,7 +62,6 @@ class Database:
                 columns = ['trans_type', 'client_name', 'item',
                     'quantity', 'price']
                 df = pd.DataFrame(data=data, columns=columns)
-                print(df.head())
                 result = df.to_sql('transactions', self.con,
                     if_exists = 'append', index=False)
             except Exception as error:
