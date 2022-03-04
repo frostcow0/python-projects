@@ -10,7 +10,7 @@ class Database:
     def __exit__(self) -> None:
         """Closes connection"""
         if self.con:
-            # self.con.commit()
+            self.con.commit()
             self.con.close()
 
     def select_all_from_table(self, table:str) -> pd.DataFrame:
@@ -19,7 +19,7 @@ class Database:
             query = f"SELECT * FROM {table}"
             try:
                 df = pd.read_sql(query, self.con)
-                logging.info(" Successfully read from %s" % table)
+                logging.debug(" Successfully read from %s" % table)
                 return df
             except Exception as error:
                 logging.error(" **Error reading from table: %s" % error)
@@ -30,7 +30,7 @@ class Database:
             query = f"SELECT * FROM inventory"
             try:
                 df = pd.read_sql(query, self.con)
-                logging.info(" Successfully read from inventory")
+                logging.debug(" Successfully read from inventory")
                 return df
             except Exception as error:
                 logging.error(" **Error reading from table: %s" % error)
@@ -41,7 +41,7 @@ class Database:
             query = f"SELECT * FROM transactions"
             try:
                 df = pd.read_sql(query, self.con)
-                logging.info(" Successfully read from transactions")
+                logging.debug(" Successfully read from transactions")
                 return df
             except Exception as error:
                 logging.error(" **Error reading from table: %s" % error)
@@ -50,7 +50,7 @@ class Database:
         """Stores the DataFrame at the specified table"""
         if self.con:
             try:
-                result = data.to_sql(table, self.con,
+                data.to_sql(table, self.con,
                     if_exists = 'append', index=False)
             except Exception as error:
                 logging.error(" **Error writing to table: %s" % error)
@@ -62,7 +62,7 @@ class Database:
                 columns = ['trans_type', 'client_name', 'item',
                     'quantity', 'price']
                 df = pd.DataFrame(data=data, columns=columns)
-                result = df.to_sql('transactions', self.con,
+                df.to_sql('transactions', self.con,
                     if_exists = 'append', index=False)
             except Exception as error:
                 logging.error(" **Error writing to table: %s" % error)
