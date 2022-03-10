@@ -2,6 +2,10 @@
 import logging
 from tkinter import *
 from pandas import DataFrame
+import seaborn as sns
+import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 # Proprietary
 from database import Database
@@ -68,9 +72,38 @@ class App(Frame):
             logging.error(" **Error loading inventory: %s" % error)
             self.new_label('No Inventory yet', 12
                 ).grid(row=1, column=1, pady=5)
+        self.inv_graph = Button(self,
+                text = 'Graph',
+                font = ('Veridian', 10),
+                padx = 3, pady = 6,
+                width = 15,
+                command = self.inventory_bar_graph)
+        self.inv_graph.grid(row=back_row+2,
+            column=0, columnspan=4, pady=5)
+        self.widgets.append(self.inv_graph)
         self.back_button(self.start_screen)
-        self.back.grid(row=back_row+2,
+        self.back.grid(row=back_row+3,
             column=0, columnspan=2, pady=5)
+        self.set_background()
+
+    def inventory_bar_graph(self):
+        """Loads bar graph of inventory per item"""
+        self.clear()
+        # self.new_label('Inventory Graph', 15
+        #     ).grid(row=0, column=0, columnspan=2)
+        fig = Figure(figsize=(10,4))
+        ax = fig.subplots()
+        ax.set_title("Inventory")
+        sns.barplot(x=self.transactions["item"],
+             y=self.transactions["quantity"], ax=ax)
+        canvas = FigureCanvasTkAgg(fig, master=self.root)
+        canvas.draw()
+        graph = canvas.get_tk_widget()
+        graph.grid(row=2, column=0, padx=5, pady=5)
+        self.widgets.append(graph)
+        self.back_button(self.inventory_screen)
+        self.back.grid(row=40,
+            column=0, columnspan=4)
         self.set_background()
 
     def transaction_screen(self):
