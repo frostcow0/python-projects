@@ -3,7 +3,6 @@ import logging
 from tkinter import *
 from pandas import DataFrame
 import seaborn as sns
-import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
@@ -12,14 +11,13 @@ from database import Database
 
 
 class App(Frame):
-    def __init__(self, master, transactions:DataFrame, db:Database):
+    def __init__(self, master, db:Database):
         Frame.__init__(self, master)
         self.configure(bg="tan")
         self.root = master
         self.db = db
         self.widgets = []
         self.grid(padx=20, pady=20)
-        self.transactions = transactions
 
     def start_screen(self):
         """Loads initial app screen"""
@@ -111,7 +109,7 @@ class App(Frame):
         self.clear()
         self.refresh_transactions()
         self.new_label('Transaction Log', 15
-            ).grid(row=0, column=0, columnspan=4)
+            ).grid(row=0, column=0, columnspan=6)
         back_row = 2
         try:
             rev_trans = self.transactions.iloc[::-1]
@@ -124,6 +122,10 @@ class App(Frame):
                     if column == "trans_type":
                         if row[column] == 0:
                             fg = "red"
+                        continue
+                    elif column == "session_id":
+                        fg = "black"
+                    elif column == "transaction_id":
                         continue
                     if counter == 0:
                         ent = self.new_entry(column.upper(), "black")
@@ -146,11 +148,11 @@ class App(Frame):
                     width = 15,
                     command = self.new_transaction)
         self.new_tran.grid(row=back_row+2,
-            column=0, columnspan=4, pady=5)
+            column=0, columnspan=6, pady=5)
         self.widgets.append(self.new_tran)
         self.back_button(self.start_screen)
         self.back.grid(row=back_row+3,
-            column=0, columnspan=4)
+            column=0, columnspan=6)
         self.set_background()
 
     def new_transaction(self):
@@ -222,7 +224,6 @@ class App(Frame):
             quantity *= -1
         data.append(quantity)
         data.append(price)
-        logging.debug(" Submitted transaction data: %s " % data)
         self.db.store_transaction([data])
         self.refresh_transactions()
         self.transaction_screen()
@@ -300,12 +301,12 @@ class App(Frame):
         # from tkinter_tinkering.py
         self.root.destroy()
 
-def create_app(title, data, db):
+def create_app(title, db):
     """Creates a new Tkinter application"""
     root = Tk()
     root.title(title)
     root["bg"] = "tan"
-    app = App(root, data, db)
+    app = App(root, db)
     app.start_screen()
     # app.new_transaction()
     root.mainloop()
