@@ -11,8 +11,7 @@ logging.basicConfig(level=logging.INFO) # swap to DEBUG
 
 def main():
     db = Database(FILENAME)
-    transactions = db.get_transactions()
-    create_app("SWSE BM", transactions, db)
+    create_app("SWSE BM", db)
 
 def example():
     db = Database("silly.db")
