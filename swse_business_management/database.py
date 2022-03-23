@@ -113,3 +113,6 @@ if __name__ == "__main__":
     # db.new_session()
     print(db.select_all_from_table("transactions"))
     # print(db.get_current_session_id())
+
+    # ADD HUSTLE FEES
+    # ADD DRUG PRICE CALCULATOR

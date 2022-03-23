@@ -15,8 +15,7 @@ def main():
 
 def example():
     db = Database("silly.db")
-    transactions = db.get_transactions()
-    create_app("Example DB", transactions, db)
+    create_app("Example DB", db)
 
 if __name__=="__main__":
     main()
