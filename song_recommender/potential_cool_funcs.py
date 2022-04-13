@@ -8,7 +8,10 @@ CONFIG = json.load(open(file="song_recommender/config.json", encoding="utf-8"))
 SCOPE = "user-read-recently-played"
 
 def get_auth(config:dict) -> sp.SpotifyOAuth:
-    """Returns SpotifyOAuth object from config credentials"""
+    """
+    Returns SpotifyOAuth object from config credentials. 
+    Uses the Client Credentials flow.
+    """
     return sp.SpotifyOAuth(
         client_id=config["CLIENT_ID"],
         client_secret=config["CLIENT_SECRET"],
@@ -16,7 +19,7 @@ def get_auth(config:dict) -> sp.SpotifyOAuth:
         scope=SCOPE,
     )
 
-def get_info(item) -> list:
+def parse_track_info(item) -> list:
     """
     Puts together a list of info from a results['item'].
     
@@ -48,7 +51,7 @@ def get_last_50_songs(sp:sp.Spotify) -> pd.DataFrame:
     results = sp.current_user_recently_played()
     all_tracks = []
     for item in results['items']:
-        all_tracks.append(get_info(item))
+        all_tracks.append(parse_track_info(item))
     headers = ['Track ID', 'Song Name', 'Album Name', 'Artist Name',
         'Explicit', 'Duration', 'Song Popularity', 'Album Release Date']
     tracks_df = pd.DataFrame(all_tracks, columns=headers)
