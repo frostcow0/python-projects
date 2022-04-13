@@ -71,13 +71,19 @@ def main():
     # (yes I often listen to the same song)
     merged_df = pd.merge(last_50, audio_features,
         left_on='Track ID', right_on='id')
-    reduced_df = merged_df.loc[:, # Better to use loc (row, column)
-        ('Song Name', 'Album Name', 'danceability')]
-    reduced_df.sort_values(by='danceability',
+    merged_df['Song & Artist'] = (merged_df['Song Name']+
+        " by "+merged_df['Artist Name'])
+    # Better to use loc (row, column), : means all
+    reduced_df = merged_df.loc[:, 
+        ('Song & Artist', 'danceability', 'energy',
+        'liveness')]
+    reduced_df.sort_values(
+        by=['danceability', 'energy', 'liveness'],
         ascending=False, inplace=True)
-    reduced_df.drop_duplicates(inplace=True)
-
-    print(reduced_df.head())
+    reduced_df.drop_duplicates(inplace=True,
+        ignore_index=True)
+    logging.info(" Top song in Reduced DataFrame: \n%s",
+        reduced_df.loc[0])
 
 
 if __name__ == "__main__":
