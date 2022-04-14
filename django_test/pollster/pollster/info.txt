@@ -1,4 +1,0 @@
-__init__.py     can be left alone.
-settings.py     is apps, templates, and database stuff.
-urls.py         is like routes. All other urls.py will be imported into this one.
-wsgi.py         can be left alone.

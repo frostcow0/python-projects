@@ -1,5 +1,0 @@
-command prompt ->
-mysql -u root -p
-"Enter password": the password here
-
-you're good to go
