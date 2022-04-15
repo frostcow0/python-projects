@@ -3,8 +3,6 @@
 /settings/config.txt
 /schemas
 temp2.py
-*.xlsx
-*.csv
 /apache_kafka/db
 /apache_kafka/jars
 */Lib
@@ -13,7 +11,15 @@ temp2.py
 */Include
 */__pychache__
 *.pyc
-/prefect/data
+/data_engineering/prefect/data
+*.xlsx
+*.csv
+*.xml
+*.zip
+
+/ml/share
+/ml/_skbuild
+/ml/etc
 
 *.db
 *.png
