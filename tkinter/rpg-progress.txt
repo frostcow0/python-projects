@@ -1,0 +1,5 @@
+I struggled for the longest time trying to figure out how I could find the X&Y of my character on the map. After consulting with several people, one suggested I try the find() function. That ended up finding the column for me. I simply added a row_counter variable to find out which row the character was on.
+
+When I finished the map, it was really buggy. It always wanted to go up at the start and never wanted to switch directions, let alone move left or right without doing it diagonally. I've just fixed it. I tried to fix it for several hours before finally getting it to work just the way it should.
+
+Had an issue when making sure that the character couldn't move off of the map. Had to set the direction to 0 as well as change the new_row back to what it would have been. I'm sure there's a better way to do this, but this is definitely the easiest.

@@ -1,0 +1,40 @@
+#!/bin/bash
+# Launch Kafka Connect
+/etc/confluent/docker/run &
+#
+# Install mysql connector driver
+wget https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-8.0.27.tar.gz && \
+tar -xzvf mysql-connector-java-8.0.27.tar.gz
+# 
+# Wait for Kafka Connect listener
+echo "Waiting for Kafka Connect to start listening on localhost ⏳"
+while : ; do
+  curl_status=$(curl -s -o /dev/null -w %{http_code} http://localhost:8083/connectors)
+  echo -e $(date) " Kafka Connect listener HTTP state: " $curl_status " (waiting for 200)"
+  if [ $curl_status -eq 200 ] ; then
+    break
+  fi
+  sleep 5
+done
+
+curl -X POST \
+  -H "Content-Type: application/json" \
+    --data '{ 
+        "name": "mysql-jdbc-sink",
+        "config": { 
+            "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector", 
+            "tasks.max": 1, 
+            "connection.url": "jdbc:mysql://mysql:3306/root_access", 
+            "connection.user": "cmst", 
+            "connection.password": "agroponics",
+            "topics": "sensor_data", 
+            "insert.mode": "insert",
+            "pk.mode": "none", 
+            "pk.fields": "none", 
+            "key.converter": "org.apache.kafka.connect.storage.StringConverter", 
+            "value.converter": "io.confluent.connect.avro.AvroConverter", 
+            "value.converter.schema.registry.url": "http://schema-registry:8081", 
+            "topic.prefix": "_connect_", 
+            "poll.interval.ms": 1000 } }' \
+http://$CONNECT_HOST:8083/connectors
+sleep infinity
