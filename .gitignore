@@ -1,16 +1,11 @@
 .pytest_cache
-/__pychache__
-/settings/config.txt
-/schemas
-/apache_kafka/db
-/apache_kafka/jars
+__pycache__
 */Lib
 */pyvenv.cfg
 */Scripts
 */Include
-*/__pychache__
+*/__pycache__
 *.pyc
-/data_engineering/prefect/data
 *.xlsx
 *.csv
 *.xml
@@ -19,6 +14,10 @@
 /ml/share
 /ml/_skbuild
 /ml/etc
+
+/data_engineering/prefect/data
+/data_engineering/apache_kafka/db
+/data_engineering/apache_kafka/jars
 
 *.db
 *.png
