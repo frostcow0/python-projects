@@ -11,13 +11,13 @@ __pycache__
 *.xml
 *.zip
 
-/ml/share
-/ml/_skbuild
-/ml/etc
+/ml/pycaret/share
+/ml/pycaret/_skbuild
+/ml/pycaret/etc
 
-/data_engineering/prefect/data
-/data_engineering/apache_kafka/db
-/data_engineering/apache_kafka/jars
+data_engineering/prefect/data/
+data_engineering/apache_kafka/db/
+data_engineering/apache_kafka/jars
 
 *.db
 *.png
