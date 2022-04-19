@@ -49,7 +49,7 @@ class CBRecommend():
         d = dot(v1,v2)
         return d/(norm(v1)*norm(v2))
     
-    def recommend(self, track_id, n_rec):
+    def recommend(self, inputVec, n_rec, track_id=None):
         """
         df (dataframe): The dataframe
         song_id (string): Representing the song name
@@ -57,7 +57,7 @@ class CBRecommend():
         """
         
         # calculate similarity of input book_id vector w.r.t all other vectors
-        inputVec = self.df.loc[track_id].values
+        # inputVec = self.df.loc[track_id].values
         self.df['sim']= self.df.apply(lambda x: self.cosine_sim(inputVec, x.values), axis=1)
 
         # returns top n user specified books
