@@ -18,3 +18,4 @@ It took several reads through [spotipy's docs](https://spotipy.readthedocs.io/en
 In the same aforementioned Jupyter Notebook I practiced a variety of pandas methods for reshaping the data, reshaping it again, reshaping it some more. My favorite method that I've recently picked up is `pd.pivot_table`, turns out they're not just for Excel!
 
 ## Prototype model
+For now I've used a Content Based Recommender that uses cosine similarity as the underlying algorithm. This is actually extremely exciting, having this cosine similarity, because it allows me to get a working recommender up and off of the ground. With the potential to store users' liked songs, we can accumulate a larger selection of songs to choose recommendations from. This would allow me to branch the recommender system into a hybrid approach combining content based & collaborative filtering.
