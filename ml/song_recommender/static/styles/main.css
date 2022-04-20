@@ -1,0 +1,22 @@
+.container {
+    background: lightcoral;
+    height: 25vh;
+    width: 50vw;
+    padding: 0.8em;
+    margin: 25vh auto 0;
+
+    display: flex;
+    flex-direction: column;
+  }
+
+.title {
+    background: pink;
+    font-size: 60px;
+    margin: auto;
+    padding: 0.5em;
+}
+
+.item {
+    padding: 0.5em;
+    margin: auto;
+}
