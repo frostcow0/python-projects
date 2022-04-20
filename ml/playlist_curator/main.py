@@ -17,7 +17,7 @@ SCOPE = ["user-read-recently-played",
     "playlist-modify-public",
     "user-library-read",]
 
-def get_token(user:str="frostcow") -> str:
+def get_token() -> str:
     """Returns Spotify token string from config credentials. 
     Uses the Authorization flow.
 
@@ -26,7 +26,6 @@ def get_token(user:str="frostcow") -> str:
     :return token (str): Spotify authorization token
     """
     return spot.util.prompt_for_user_token(
-        # username=user,
         scope=SCOPE,
         client_id=CLIENT_ID,
         client_secret=CLIENT_SECRET,
@@ -162,11 +161,14 @@ def add_playlist_songs(sp:spot.Spotify, recommended:pd.DataFrame, user_id:str) -
         tracks=recommended.index)
     logging.info(" Added the recommended tracks to the playlist")
 
-def run_flow(user="frostcow"):
+def run_flow():
     """Testing flow"""
     # Get token & Spotify client to get last 50 songs
-    token = get_token(user=user)
+    logging.info(" Requesting token")
+    token = get_token()
+    logging.info(" Creating Spotify client")
     spotify = spot.Spotify(auth=token)
+    logging.info(" Getting current user ID")
     user_id = spotify.current_user()['id']
     saved = get_saved_tracks(spotify, limit=2000)
     last_50 = get_last_50_songs(spotify)
