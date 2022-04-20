@@ -1,4 +1,4 @@
-import json
+import os
 import logging
 from typing import Tuple
 from datetime import date
@@ -7,14 +7,17 @@ import spotipy as spot
 from content_based import CBRecommend, normalize, ohe
 
 
-CONFIG = json.load(
-    open(file="config.json",
-    encoding="utf-8"))
+# CONFIG = json.load(
+#     open(file="config.json",
+#     encoding="utf-8"))
+CLIENT_ID = os.getenv("CLIENT_ID")
+CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+REDIRECT_URI = os.getenv("REDIRECT_URI")
 SCOPE = ["user-read-recently-played",
     "playlist-modify-public",
     "user-library-read",]
 
-def get_token(config:dict, user:str="frostcow") -> str:
+def get_token(user:str="frostcow") -> str:
     """Returns Spotify token string from config credentials. 
     Uses the Authorization flow.
 
@@ -23,11 +26,11 @@ def get_token(config:dict, user:str="frostcow") -> str:
     :return token (str): Spotify authorization token
     """
     return spot.util.prompt_for_user_token(
-        username=user,
+        # username=user,
         scope=SCOPE,
-        client_id=config["CLIENT_ID"],
-        client_secret=config["CLIENT_SECRET"],
-        redirect_uri=config["REDIRECT_URI"])
+        client_id=CLIENT_ID,
+        client_secret=CLIENT_SECRET,
+        redirect_uri=REDIRECT_URI)
 
 def parse_track_info(item) -> list:
     """Puts together a list of info from a response['item'].
@@ -162,7 +165,7 @@ def add_playlist_songs(sp:spot.Spotify, recommended:pd.DataFrame, user_id:str) -
 def run_flow(user="frostcow"):
     """Testing flow"""
     # Get token & Spotify client to get last 50 songs
-    token = get_token(CONFIG, user=user)
+    token = get_token(user=user)
     spotify = spot.Spotify(auth=token)
     user_id = spotify.current_user()['id']
     saved = get_saved_tracks(spotify, limit=2000)
