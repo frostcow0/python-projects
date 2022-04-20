@@ -19,3 +19,8 @@ In the same aforementioned Jupyter Notebook I practiced a variety of pandas meth
 
 ## Prototype model
 For now I've used a Content Based Recommender that uses cosine similarity as the underlying algorithm. This is actually extremely exciting, having this cosine similarity, because it allows me to get a working recommender up and off of the ground. With the potential to store users' liked songs, we can accumulate a larger selection of songs to choose recommendations from. This would allow me to branch the recommender system into a hybrid approach combining content based & collaborative filtering.
+
+## Solidify flow for steps 1-3
+I've retroactively cleaned up my code, added comments and logs, and changed the structure here and there for improved adaptability and overall readability. Satisfied with the way that things look & run, I'm moving on to the Flask deployment. One of the hardest parts about this is convincing myself that I shouldn't just hunker down on the recommender and improve it until it's perfect - I also have the overall product to think about. What's a recommender good for if no one can use it?
+
+## Deploy using Flask
