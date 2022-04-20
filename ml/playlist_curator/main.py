@@ -25,9 +25,13 @@ def get_token() -> str:
     :param username (str): Username for token
     :return token (str): Spotify authorization token
     """
+    logging.info(" \n\tclient_id: %s\n client_secret: %s\n redirect_uri: %s",
+        CLIENT_ID, CLIENT_SECRET, REDIRECT_URI)
     return spot.util.prompt_for_user_token(
-        username="frostcow",
-        scope=SCOPE)
+        scope=SCOPE,
+        client_id=CLIENT_ID,
+        client_secret=CLIENT_SECRET,
+        redirect_uri=REDIRECT_URI)
 
 def parse_track_info(item) -> list:
     """Puts together a list of info from a response['item'].
