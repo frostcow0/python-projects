@@ -1,11 +1,13 @@
 # https://towardsdatascience.com/recommendation-systems-explained-a42fc60591ed
 
 import pandas as pd
-import numpy as np
+from typing import Tuple
 from numpy import dot
 from numpy.linalg import norm
+from sklearn.preprocessing import OneHotEncoder # my addition
 
-def normalize(data):
+
+def normalize(data) -> list:
     '''
     This function will normalize the input data to be between 0 and 1
     
@@ -21,22 +23,37 @@ def normalize(data):
     max_val = max(data)
     return [x/max_val for x in data]
 
-def ohe(df, enc_col):
+def ohe(saved:pd.DataFrame, last:pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
     '''
-    This function will one hot encode the specified column and add it back
-    onto the input dataframe
+    This function will one hot encode the specified columns and add it back
+    onto the input dataframes. These have to be done together to avoid
+    dataframe shape issues (different unique values make unexpected columns).
     
     params:
-        df (DataFrame) : The dataframe you wish for the results to be appended to
-        enc_col (String) : The column you want to OHE
+        saved (DataFrame) : The dataframe containing user's saved songs
+        last (DataFrame) : The dataframe containing user's recently played songs
     
     returns:
-        The OHE columns added onto the input dataframe
+        A tuple of the dataframes with OHE columns replacing the originals
     '''
-    
-    ohe_df = pd.get_dummies(df[enc_col])
-    ohe_df.reset_index(drop = True, inplace = True)
-    return pd.concat([df, ohe_df], axis = 1)
+    # Categorical columns to One-hot Encode
+    cat_cols = ["Album Release Date", "Explicit"]
+    # Ignore is what allows us to have consistent dataframe shapes
+    # https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.OneHotEncoder.html
+    OH_encoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
+    # Order is important here, last has to be fit before saved
+    ohe_df_l = pd.DataFrame(OH_encoder.fit_transform(last[cat_cols]))
+    ohe_df_s = pd.DataFrame(OH_encoder.transform(saved[cat_cols]))
+    # OHE loses index, so we re-apply (according to my Udemy notes)
+    ohe_df_l.index = last.index
+    ohe_df_s.index = saved.index
+    # Drop the original categorical columns
+    last.drop(cat_cols, axis=1, inplace=True)
+    saved.drop(cat_cols, axis=1, inplace=True)
+    return (
+        pd.concat([saved, ohe_df_s], axis = 1),
+        pd.concat([last, ohe_df_l], axis = 1),
+    )
 
 class CBRecommend():
     def __init__(self, df):
@@ -49,7 +66,7 @@ class CBRecommend():
         d = dot(v1,v2)
         return d/(norm(v1)*norm(v2))
     
-    def recommend(self, inputVec, n_rec, track_id=None):
+    def recommend(self, inputVec, n_rec):
         """
         df (dataframe): The dataframe
         song_id (string): Representing the song name
@@ -57,7 +74,6 @@ class CBRecommend():
         """
         
         # calculate similarity of input book_id vector w.r.t all other vectors
-        # inputVec = self.df.loc[track_id].values
         self.df['sim']= self.df.apply(lambda x: self.cosine_sim(inputVec, x.values), axis=1)
 
         # returns top n user specified books
