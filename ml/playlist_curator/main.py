@@ -1,9 +1,9 @@
 import json
 import logging
-import pandas as pd
-import spotipy as spot
 from typing import Tuple
 from datetime import date
+import pandas as pd
+import spotipy as spot
 from content_based import CBRecommend, normalize, ohe
 
 
@@ -49,9 +49,11 @@ def parse_track_info(item) -> list:
         song_popularity, album_release_date]
 
 def get_tracks_info(sp:spot.Spotify, tracks:list) -> pd.DataFrame:
+    """Gets info for provided track IDs"""
     response = sp.tracks(tracks)
     tracks_info = [[track['name'], track['artists'][0]['name']] for track in response['tracks']]
     tracks_df = pd.DataFrame(tracks_info, columns=['Song Name', 'Artist Name'])
+    tracks_df.index = [idx+1 for idx in tracks_df.index]
     return tracks_df
 
 def get_last_50_songs(sp:spot.Spotify) -> pd.DataFrame:
@@ -75,7 +77,7 @@ def get_last_50_songs(sp:spot.Spotify) -> pd.DataFrame:
 def get_saved_tracks(sp:spot.Spotify, limit:int=50) -> pd.DataFrame:
     """Using the Spotify client, returns dataframe
     of the user's last n saved tracks.
-    
+
     :param sp (spot.Spotify): Spotify client
     :param limit (int): Number of songs to retrieve
     """
@@ -116,7 +118,7 @@ def prep_dataframes(saved:pd.DataFrame, last:pd.DataFrame) -> Tuple[pd.DataFrame
     df_s['song_popularity'] = normalize(df_s['Song Popularity'].values)
     df_l['duration_norm'] = normalize(df_l['Duration'].values)
     df_l['song_popularity'] = normalize(df_l['Song Popularity'].values)
-    
+
     # OHE on Album Release Date and Explicit - have to be done together
     df_s, df_l = ohe(saved=df_s, last=df_l)
 
@@ -131,6 +133,7 @@ def prep_dataframes(saved:pd.DataFrame, last:pd.DataFrame) -> Tuple[pd.DataFrame
     return df_s, df_l
 
 def get_recommendation(saved:pd.DataFrame, last:pd.DataFrame, n_rec:int=5) -> pd.DataFrame:
+    """Uses cosine similarity to get recommended songs from the user's saved songs"""
     prepped_saved, prepped_last = prep_dataframes(saved, last)
     cbr = CBRecommend(df=prepped_saved)
     prepped_last.reset_index(drop=True, inplace=True)
@@ -138,6 +141,7 @@ def get_recommendation(saved:pd.DataFrame, last:pd.DataFrame, n_rec:int=5) -> pd
     return cbr.recommend(inputVec=averaged_vector, n_rec=n_rec)
 
 def create_playlist(sp:spot.Spotify, user_id:str) -> str:
+    """Creates playlist for the user"""
     today = date.today().strftime("%m/%d/%Y")
     playlist_name = f"Song Recommender's Playlist {today}"
     playlist_description = ("This playlist was made by Jon's Song Recommender"
@@ -148,6 +152,7 @@ def create_playlist(sp:spot.Spotify, user_id:str) -> str:
     return playlist_name
 
 def add_playlist_songs(sp:spot.Spotify, recommended:pd.DataFrame, user_id:str) -> None:
+    """Adds songs to user's most recently made playlist"""
     created_playlist = sp.user_playlists(user=user_id, limit=1)
     playlist_id = created_playlist['items'][0]['id']
     sp.user_playlist_add_tracks(user=user_id, playlist_id=playlist_id,
@@ -163,12 +168,16 @@ def run_flow(user="frostcow"):
     saved = get_saved_tracks(spotify, limit=2000)
     last_50 = get_last_50_songs(spotify)
     recommended = get_recommendation(saved, last_50, n_rec=20)
+    nice_format_recommend = get_tracks_info(spotify, recommended.index)
     logging.info(" The recommended songs are: \n%s",
-        get_tracks_info(spotify, recommended.index))
-    create_playlist(spotify, user_id)
-    add_playlist_songs(spotify, recommended, user_id)
+        nice_format_recommend)
 
-    # Future additions: 
+    # create_playlist(spotify, user_id)
+    # add_playlist_songs(spotify, recommended, user_id)
+
+    return nice_format_recommend
+
+    # Future additions:
     #   add genre to the songs (from artist)
     #   add audio features per song (heavy compute cost, big benefit)
     #   store saved songs to add collaborative filtering/hybrid algorithm
