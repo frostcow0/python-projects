@@ -40,7 +40,7 @@ jupyterlab-widgets==1.1.0
 lazy-object-proxy==1.6.0
 MarkupSafe==2.0.1
 matplotlib-inline==0.1.3
-mccabe==0.7.0
+# mccabe==0.7.0 version problems
 mistune==0.8.4
 mkl-fft==1.3.1
 mkl-random==1.2.2
