@@ -8,7 +8,7 @@ from content_based import CBRecommend, normalize, ohe
 
 
 CONFIG = json.load(
-    open(file="song_recommender/config.json",
+    open(file="config.json",
     encoding="utf-8"))
 SCOPE = ["user-read-recently-played",
     "playlist-modify-public",
@@ -49,7 +49,6 @@ def parse_track_info(item) -> list:
         song_popularity, album_release_date]
 
 def get_tracks_info(sp:spot.Spotify, tracks:list) -> pd.DataFrame:
-    print(tracks)
     response = sp.tracks(tracks)
     tracks_info = [[track['name'], track['artists'][0]['name']] for track in response['tracks']]
     tracks_df = pd.DataFrame(tracks_info, columns=['Song Name', 'Artist Name'])
@@ -132,7 +131,6 @@ def prep_dataframes(saved:pd.DataFrame, last:pd.DataFrame) -> Tuple[pd.DataFrame
     return df_s, df_l
 
 def get_recommendation(saved:pd.DataFrame, last:pd.DataFrame, n_rec:int=5) -> pd.DataFrame:
-    print(saved.shape, last.shape)
     prepped_saved, prepped_last = prep_dataframes(saved, last)
     cbr = CBRecommend(df=prepped_saved)
     prepped_last.reset_index(drop=True, inplace=True)
@@ -156,27 +154,27 @@ def add_playlist_songs(sp:spot.Spotify, recommended:pd.DataFrame, user_id:str) -
         tracks=recommended.index)
     logging.info(" Added the recommended tracks to the playlist")
 
-def main():
+def run_flow(user="frostcow"):
     """Testing flow"""
     # Get token & Spotify client to get last 50 songs
-    user = "frostcow"
     token = get_token(CONFIG, user=user)
     spotify = spot.Spotify(auth=token)
     user_id = spotify.current_user()['id']
     saved = get_saved_tracks(spotify, limit=2000)
     last_50 = get_last_50_songs(spotify)
     recommended = get_recommendation(saved, last_50, n_rec=20)
-    logging.info(" The recommended songs are: %s",
+    logging.info(" The recommended songs are: \n%s",
         get_tracks_info(spotify, recommended.index))
-    # playlist_name = create_playlist(spotify, user_id)
-    # add_playlist_songs(spotify, recommended, user_id)
+    create_playlist(spotify, user_id)
+    add_playlist_songs(spotify, recommended, user_id)
 
     # Future additions: 
     #   add genre to the songs (from artist)
     #   add audio features per song (heavy compute cost, big benefit)
     #   store saved songs to add collaborative filtering/hybrid algorithm
+    #   edit playlist songs if they've already used this to make a playlist today
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    main()
+    run_flow()
