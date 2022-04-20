@@ -128,6 +128,7 @@ def prep_dataframes(saved:pd.DataFrame, last:pd.DataFrame) -> Tuple[pd.DataFrame
     df_s.set_index('Track ID', inplace = True)
     df_l.drop(columns = cols, inplace = True)
     df_l.set_index('Track ID', inplace = True)
+    logging.info(" Prepped saved & last played songs")
     return df_s, df_l
 
 def get_recommendation(saved:pd.DataFrame, last:pd.DataFrame, n_rec:int=5) -> pd.DataFrame:
@@ -136,7 +137,6 @@ def get_recommendation(saved:pd.DataFrame, last:pd.DataFrame, n_rec:int=5) -> pd
     cbr = CBRecommend(df=prepped_saved)
     prepped_last.reset_index(drop=True, inplace=True)
     averaged_vector = prepped_last.mean(axis=0)
-    print(prepped_saved.shape, prepped_last.shape, averaged_vector.shape)
     return cbr.recommend(inputVec=averaged_vector, n_rec=n_rec)
 
 def create_playlist(sp:spot.Spotify, user_id:str) -> str:
@@ -146,13 +146,15 @@ def create_playlist(sp:spot.Spotify, user_id:str) -> str:
         f" on {today}. I hope you like it!")
     sp.user_playlist_create(user=user_id,
         name=playlist_name, description=playlist_description)
+    logging.info(" Created the playlist for the user")
     return playlist_name
 
-def add_playlist_songs(sp:spot.Spotify, recommended:pd.DataFrame, playlist:str, user_id:str) -> None:
+def add_playlist_songs(sp:spot.Spotify, recommended:pd.DataFrame, user_id:str) -> None:
     created_playlist = sp.user_playlists(user=user_id, limit=1)
     playlist_id = created_playlist['items'][0]['id']
     sp.user_playlist_add_tracks(user=user_id, playlist_id=playlist_id,
         tracks=recommended.index)
+    logging.info(" Added the recommended tracks to the playlist")
 
 def main():
     """Testing flow"""
@@ -164,12 +166,16 @@ def main():
     saved = get_saved_tracks(spotify, limit=2000)
     last_50 = get_last_50_songs(spotify)
     recommended = get_recommendation(saved, last_50, n_rec=20)
-    print(get_tracks_info(spotify, recommended.index))
+    logging.info(" The recommended songs are: %s",
+        get_tracks_info(spotify, recommended.index))
     # playlist_name = create_playlist(spotify, user_id)
-    # add_playlist_songs(spotify, recommended,
-    #     playlist_name, user_id)
-    # Need to supply all liked songs, or at least a few hundred
-    # for better results
+    # add_playlist_songs(spotify, recommended, user_id)
+
+    # Future additions: 
+    #   add genre to the songs (from artist)
+    #   add audio features per song (heavy compute cost, big benefit)
+    #   store saved songs to add collaborative filtering/hybrid algorithm
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
