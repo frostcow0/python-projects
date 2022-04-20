@@ -10,9 +10,9 @@ from content_based import CBRecommend, normalize, ohe
 # CONFIG = json.load(
 #     open(file="config.json",
 #     encoding="utf-8"))
-CLIENT_ID = os.getenv("CLIENT_ID")
-CLIENT_SECRET = os.getenv("CLIENT_SECRET")
-REDIRECT_URI = os.getenv("REDIRECT_URI")
+CLIENT_ID = os.getenv("SPOTIPY_CLIENT_ID")
+CLIENT_SECRET = os.getenv("SPOTIPY_CLIENT_SECRET")
+REDIRECT_URI = os.getenv("SPOTIPY_REDIRECT_URI")
 SCOPE = ["user-read-recently-played",
     "playlist-modify-public",
     "user-library-read",]
@@ -28,10 +28,10 @@ def get_token() -> str:
     logging.info(" \n\tclient_id: %s\n client_secret: %s\n redirect_uri: %s",
         CLIENT_ID, CLIENT_SECRET, REDIRECT_URI)
     return spot.util.prompt_for_user_token(
-        scope=SCOPE,
-        client_id=CLIENT_ID,
-        client_secret=CLIENT_SECRET,
-        redirect_uri=REDIRECT_URI)
+        scope=SCOPE,)
+        # client_id=CLIENT_ID,
+        # client_secret=CLIENT_SECRET,
+        # redirect_uri=REDIRECT_URI)
 
 def parse_track_info(item) -> list:
     """Puts together a list of info from a response['item'].
