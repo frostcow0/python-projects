@@ -10,28 +10,26 @@ from content_based import CBRecommend, normalize, ohe
 # CONFIG = json.load(
 #     open(file="config.json",
 #     encoding="utf-8"))
-CLIENT_ID = os.getenv("SPOTIPY_CLIENT_ID")
-CLIENT_SECRET = os.getenv("SPOTIPY_CLIENT_SECRET")
-REDIRECT_URI = os.getenv("SPOTIPY_REDIRECT_URI")
 SCOPE = ["user-read-recently-played",
     "playlist-modify-public",
     "user-library-read",]
 
+def set_env_variables():
+    """Manually sets environment variables"""
+    os.environ["SPOTIPY_CLIENT_ID"] = "468b8b024bfb41d5b1957dad2afc766a"
+    os.environ["SPOTIPY_CLIENT_SECRET"] = "8827668f8ed64f13bf8c2e83781c3997"
+    os.environ["SPOTIPY_REDIRECT_URI"] = "http://localhost:8080"
+
 def get_token() -> str:
-    """Returns Spotify token string from config credentials. 
+    """Returns Spotify token string from config credentials.
     Uses the Authorization flow.
 
     :param config (dict): Global config dict
     :param username (str): Username for token
     :return token (str): Spotify authorization token
     """
-    logging.info(" \n\tclient_id: %s\n client_secret: %s\n redirect_uri: %s",
-        CLIENT_ID, CLIENT_SECRET, REDIRECT_URI)
     return spot.util.prompt_for_user_token(
-        scope=SCOPE,)
-        # client_id=CLIENT_ID,
-        # client_secret=CLIENT_SECRET,
-        # redirect_uri=REDIRECT_URI)
+        scope=SCOPE)
 
 def parse_track_info(item) -> list:
     """Puts together a list of info from a response['item'].
@@ -147,8 +145,8 @@ def get_recommendation(saved:pd.DataFrame, last:pd.DataFrame, n_rec:int=5) -> pd
 def create_playlist(sp:spot.Spotify, user_id:str) -> str:
     """Creates playlist for the user"""
     today = date.today().strftime("%m/%d/%Y")
-    playlist_name = f"Song Recommender's Playlist {today}"
-    playlist_description = ("This playlist was made by Jon's Song Recommender"
+    playlist_name = f"{today} Playlist"
+    playlist_description = ("This playlist was made by Jon's Playlist Curator"
         f" on {today}. I hope you like it!")
     sp.user_playlist_create(user=user_id,
         name=playlist_name, description=playlist_description)
@@ -166,15 +164,20 @@ def add_playlist_songs(sp:spot.Spotify, recommended:pd.DataFrame, user_id:str) -
 def run_flow():
     """Testing flow"""
     # Get token & Spotify client to get last 50 songs
+    set_env_variables() # for running locally
     logging.info(" Requesting token")
     token = get_token()
     logging.info(" Creating Spotify client")
     spotify = spot.Spotify(auth=token)
     logging.info(" Getting current user ID")
     user_id = spotify.current_user()['id']
+    logging.info(" Getting saved tracks")
     saved = get_saved_tracks(spotify, limit=2000)
+    logging.info(" Getting recently played songs")
     last_50 = get_last_50_songs(spotify)
+    logging.info(" Getting recommendations")
     recommended = get_recommendation(saved, last_50, n_rec=20)
+    logging.info(" Formatting recommendations")
     nice_format_recommend = get_tracks_info(spotify, recommended.index)
     logging.info(" The recommended songs are: \n%s",
         nice_format_recommend)
