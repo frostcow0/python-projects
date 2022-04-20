@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Personal Playlist Curator</title>
+{% endblock %}
+
+{% block body %}
+<div class="container">
+    <div class="title">Personal Playlist Curator v0.5</div>
+    <div class="item">Using your last 50 played songs, this app curates a playlist of 20 songs - specifically for you!</div>
+    
+    <form action='/' method='POST' class="item">
+        {% raw %}
+        <button type="submit" class="btn btn-primary" ng-disabled="loading">Get Playlist</button>
+        {% endraw %}
+    </form>
+    <div class="item">Last updated 4/19/2022</div>
+</div>
+{% endblock %}
