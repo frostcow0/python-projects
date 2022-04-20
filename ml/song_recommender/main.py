@@ -2,6 +2,8 @@ import json
 import logging
 import pandas as pd
 import spotipy as spot
+from typing import Tuple
+from datetime import date
 from content_based import CBRecommend, normalize, ohe
 
 
@@ -12,7 +14,7 @@ SCOPE = ["user-read-recently-played",
     "playlist-modify-public",
     "user-library-read",]
 
-def get_token(config:dict, username:str="frostcow") -> str:
+def get_token(config:dict, user:str="frostcow") -> str:
     """Returns Spotify token string from config credentials. 
     Uses the Authorization flow.
 
@@ -21,7 +23,7 @@ def get_token(config:dict, username:str="frostcow") -> str:
     :return token (str): Spotify authorization token
     """
     return spot.util.prompt_for_user_token(
-        username=username,
+        username=user,
         scope=SCOPE,
         client_id=config["CLIENT_ID"],
         client_secret=config["CLIENT_SECRET"],
@@ -105,45 +107,67 @@ def get_saved_tracks(sp:spot.Spotify, limit:int=50) -> pd.DataFrame:
         tracks_df.shape[0], tracks_df.iloc[0])
     return tracks_df
 
-def clean_dataframe(input:pd.DataFrame) -> pd.DataFrame:
+def prep_dataframes(saved:pd.DataFrame, last:pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Helper function for get_recommendation"""
-    df = input.copy()
+    df_s = saved.copy()
+    df_l = last.copy()
 
     # normalize the num_pages, ratings, price columns
-    df['duration_norm'] = normalize(df['Duration'].values)
-    df['song_popularity'] = normalize(df['Song Popularity'].values)
+    df_s['duration_norm'] = normalize(df_s['Duration'].values)
+    df_s['song_popularity'] = normalize(df_s['Song Popularity'].values)
+    df_l['duration_norm'] = normalize(df_l['Duration'].values)
+    df_l['song_popularity'] = normalize(df_l['Song Popularity'].values)
     
-    # OHE on publish_year and genre
-    df = ohe(df = df, enc_col = 'Album Release Date')
-    df = ohe(df = df, enc_col = 'Explicit')
+    # OHE on Album Release Date and Explicit - have to be done together
+    df_s, df_l = ohe(saved=df_s, last=df_l)
 
     # drop redundant columns
-    cols = ['Duration', 'Song Popularity', 'Album Release Date',
-        'Song Name', 'Album Name', 'Artist Name', 'Explicit']
-    df.drop(columns = cols, inplace = True)
-    df.set_index('Track ID', inplace = True)
-    return df
+    cols = ['Duration', 'Song Popularity',
+        'Song Name', 'Album Name', 'Artist Name']
+    df_s.drop(columns = cols, inplace = True)
+    df_s.set_index('Track ID', inplace = True)
+    df_l.drop(columns = cols, inplace = True)
+    df_l.set_index('Track ID', inplace = True)
+    return df_s, df_l
 
 def get_recommendation(saved:pd.DataFrame, last:pd.DataFrame, n_rec:int=5) -> pd.DataFrame:
-    cleaned_saved = clean_dataframe(saved)
-    cleaned_last = clean_dataframe(saved)
-
-    # ran on a sample as an example
-    t = cleaned_saved.copy()
-    cbr = CBRecommend(df = t)
-    cleaned_last.reset_index(drop=True, inplace=True)
-    averaged_vector = cleaned_last.mean(axis=0)
+    print(saved.shape, last.shape)
+    prepped_saved, prepped_last = prep_dataframes(saved, last)
+    cbr = CBRecommend(df=prepped_saved)
+    prepped_last.reset_index(drop=True, inplace=True)
+    averaged_vector = prepped_last.mean(axis=0)
+    print(prepped_saved.shape, prepped_last.shape, averaged_vector.shape)
     return cbr.recommend(inputVec=averaged_vector, n_rec=n_rec)
+
+def create_playlist(sp:spot.Spotify, user_id:str) -> str:
+    today = date.today().strftime("%m/%d/%Y")
+    playlist_name = f"Song Recommender's Playlist {today}"
+    playlist_description = ("This playlist was made by Jon's Song Recommender"
+        f" on {today}. I hope you like it!")
+    sp.user_playlist_create(user=user_id,
+        name=playlist_name, description=playlist_description)
+    return playlist_name
+
+def add_playlist_songs(sp:spot.Spotify, recommended:pd.DataFrame, playlist:str, user_id:str) -> None:
+    created_playlist = sp.user_playlists(user=user_id, limit=1)
+    playlist_id = created_playlist['items'][0]['id']
+    sp.user_playlist_add_tracks(user=user_id, playlist_id=playlist_id,
+        tracks=recommended.index)
 
 def main():
     """Testing flow"""
     # Get token & Spotify client to get last 50 songs
-    token = get_token(CONFIG)
+    user = "frostcow"
+    token = get_token(CONFIG, user=user)
     spotify = spot.Spotify(auth=token)
+    user_id = spotify.current_user()['id']
     saved = get_saved_tracks(spotify, limit=2000)
     last_50 = get_last_50_songs(spotify)
-    recommended = get_recommendation(saved, last_50)
+    recommended = get_recommendation(saved, last_50, n_rec=20)
     print(get_tracks_info(spotify, recommended.index))
+    # playlist_name = create_playlist(spotify, user_id)
+    # add_playlist_songs(spotify, recommended,
+    #     playlist_name, user_id)
     # Need to supply all liked songs, or at least a few hundred
     # for better results
 
