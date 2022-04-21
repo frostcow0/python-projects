@@ -1,3 +1,8 @@
+# Unfortunately there's an issue with the way Streamlit
+# handles redirects & there's no way to use Spotify's
+# API with it, as far as my research shows.
+# Lots of people have run into this with no fix found yet.
+
 import logging
 import streamlit as st
 import pandas as pd
