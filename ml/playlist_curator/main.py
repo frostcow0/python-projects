@@ -134,7 +134,7 @@ def prep_dataframes(saved:pd.DataFrame, last:pd.DataFrame) -> Tuple[pd.DataFrame
     logging.info(" Prepped saved & last played songs")
     return df_s, df_l
 
-def get_recommendation(saved:pd.DataFrame, last:pd.DataFrame, n_rec:int=5) -> pd.DataFrame:
+def run_cosine_sim(saved:pd.DataFrame, last:pd.DataFrame, n_rec:int=5) -> pd.DataFrame:
     """Uses cosine similarity to get recommended songs from the user's saved songs"""
     prepped_saved, prepped_last = prep_dataframes(saved, last)
     cbr = CBRecommend(df=prepped_saved)
@@ -161,7 +161,7 @@ def add_playlist_songs(sp:spot.Spotify, recommended:pd.DataFrame, user_id:str) -
         tracks=recommended.index)
     logging.info(" Added the recommended tracks to the playlist")
 
-def run_flow():
+def get_recommendations():
     """Testing flow"""
     # Get token & Spotify client to get last 50 songs
     set_env_variables() # for running locally
@@ -170,22 +170,25 @@ def run_flow():
     logging.info(" Creating Spotify client")
     spotify = spot.Spotify(auth=token)
     logging.info(" Getting current user ID")
-    user_id = spotify.current_user()['id']
     logging.info(" Getting saved tracks")
     saved = get_saved_tracks(spotify, limit=2000)
     logging.info(" Getting recently played songs")
     last_50 = get_last_50_songs(spotify)
     logging.info(" Getting recommendations")
-    recommended = get_recommendation(saved, last_50, n_rec=20)
+    recommended = run_cosine_sim(saved, last_50, n_rec=20)
     logging.info(" Formatting recommendations")
     nice_format_recommend = get_tracks_info(spotify, recommended.index)
     logging.info(" The recommended songs are: \n%s",
         nice_format_recommend)
+    return nice_format_recommend, recommended
 
-    # create_playlist(spotify, user_id)
-    # add_playlist_songs(spotify, recommended, user_id)
-
-    return nice_format_recommend
+def save_playlist(recommended:pd.DataFrame):
+    """Saves recommended songs as a playlist for the user"""
+    token = get_token()
+    spotify = spot.Spotify(auth=token)
+    user_id = spotify.current_user()['id']
+    create_playlist(spotify, user_id)
+    add_playlist_songs(spotify, recommended, user_id)
 
     # Future additions:
     #   add genre to the songs (from artist)
