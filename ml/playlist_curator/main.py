@@ -161,6 +161,43 @@ def add_playlist_songs(sp:spot.Spotify, recommended:pd.DataFrame, user_id:str) -
         tracks=recommended.index)
     logging.info(" Added the recommended tracks to the playlist")
 
+def add_audio_features(sp:spot.Spotify, tracks:pd.DataFrame, limit:int=50) -> pd.Series:
+    """Uses's Spotify's audio_features api call to build a Series of
+    tracks and their features"""
+    df = tracks.copy()
+    if limit > 50: # Spotify's request limit is 50
+        counter = 0
+        while limit > 0:
+            if limit//50:
+                limit -= 50
+                n = 50
+            else:
+                n, limit = limit, 0
+            start = counter * 50
+            end = start + 50
+            track_ids = tracks.loc[start:end ,"Track ID"]
+            # print(track_ids.shape)
+            # continue
+            result = sp.audio_features(track_ids)
+            result_df = pd.DataFrame.from_dict(result)
+            # print(result_df.columns)
+            if counter == 0:
+                df = pd.merge(df, result_df,
+                    left_on="Track ID", right_on="id")
+            else:
+                df = pd.concat([df, result_df],
+                    ignore_index=True)
+            counter += 1
+    else:
+        track_ids = df.loc[:, "Track ID"]
+        result = sp.audio_features(track_ids)
+        result_df = pd.DataFrame.from_dict(result)
+        df = pd.merge(df, result_df,
+            left_on="Track ID", right_on="id")
+    df = df.drop(labels=["id", "uri", "track_href",
+        "analysis_url", "type"], axis=1)
+    return df
+
 def get_recommendations():
     """Testing flow"""
     # Get token & Spotify client to get last 50 songs
@@ -169,13 +206,17 @@ def get_recommendations():
     token = get_token()
     logging.info(" Creating Spotify client")
     spotify = spot.Spotify(auth=token)
-    logging.info(" Getting current user ID")
     logging.info(" Getting saved tracks")
     saved = get_saved_tracks(spotify, limit=2000)
+    logging.info(" Getting audio features for saved tracks")
+    feature_saved = add_audio_features(spotify, saved, limit=2000)
     logging.info(" Getting recently played songs")
     last_50 = get_last_50_songs(spotify)
+    logging.info(" Getting audio features for recent tracks")
+    feature_50 = add_audio_features(spotify, last_50)
     logging.info(" Getting recommendations")
-    recommended = run_cosine_sim(saved, last_50, n_rec=20)
+    recommended = run_cosine_sim(feature_saved,
+        feature_50, n_rec=20)
     logging.info(" Formatting recommendations")
     nice_format_recommend = get_tracks_info(spotify, recommended.index)
     logging.info(" The recommended songs are: \n%s",
@@ -199,4 +240,4 @@ def save_playlist(recommended:pd.DataFrame):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    run_flow()
+    get_recommendations()
