@@ -185,10 +185,10 @@ def create_flow() -> Flow:
     with Flow(FLOW_NAME, run_config=LocalRun()) as flow:
         country = Parameter("country", default=DEFAULT_COUNTRY)
 
-        # covid_df = extract_whole_covid_data()
-        covid_df = extract_covid_data_from_file()
+        covid_df = extract_whole_covid_data()
+        # covid_df = extract_covid_data_from_file()
         filtered_covid_df = filter_data(covid_df, country)
-        
+
         # Only for whole data, not latest
         full_df = extract_full_country_data(filtered_covid_df)
 
@@ -219,4 +219,10 @@ def create_flow() -> Flow:
 
 if __name__ == '__main__':
     flow = create_flow()
-    flow.run()
+    # flow.run() # comment out when running via cloud
+    # in CLI:
+    #   prefect auth login --key <YOUR-KEY>
+    #   prefect create project <PROJECT-NAME>
+    flow.register(project_name="tester") # used tester for project name
+    # back to CLI:
+    #   prefect agent local start
