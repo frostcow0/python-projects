@@ -20,7 +20,7 @@ Updated 7/27/2022
    - Find it under ./data_engineering/prefect
 
 ## Layout Guide
-Here's how I organize my projects. I've bolded topics that I see mentioned in industry.
+Here's how I organize my projects. I've bolded the projects mentioned above in Most Notable Overall.
 
 #### Cybernetics
  - Python implementations of cybernetics principles (like transformers) from *An Introduction to Cybernetics* by W. Ross Ashby
@@ -29,7 +29,7 @@ Here's how I organize my projects. I've bolded topics that I see mentioned in in
 #### Data Engineering
  - Projects using different 3rd party "pipelines":
    - **Apache Kafka** &mdash; all of the groundwork I laid for my implementation in Docker created for my senior capstone at Kansas State University (an autonomous agroponics system)
-   - Prefect &mdash; a light version of Airflow, incredibly cool to utilize and try to structure my code in a new way
+   - **Prefect** &mdash; a light version of Airflow, incredibly cool to utilize and try to structure my code in a new way
  - And an ETL example I made to show to some underclassmen (the bare bones basics)
  
  #### Fun
@@ -46,7 +46,7 @@ Here's how I organize my projects. I've bolded topics that I see mentioned in in
    
 #### ML
  - A pretty wide variety of projects here:
-   - Playlist Curator &mdash; not implemented with ML yet, but uses cosine distance to recommend songs utilizing Spotify's API
+   - **Playlist Curator** &mdash; not implemented with ML yet, but uses cosine distance to recommend songs utilizing Spotify's API
    - Pycaret &mdash; cool new auto-ML python library, you should give it a look if you haven't heard of it
    - COVID &mdash; my first ever attempt at ML, before I took a course in ML or anything so it's a mess
    - Wikipedia NLP &mdash; I webscraped some data from Wikipedia and wanted to try out tf-idf, something I'd read about but never utilized
@@ -55,7 +55,7 @@ Here's how I organize my projects. I've bolded topics that I see mentioned in in
 #### Tkinter
  - One of the first libraries I ever used in python, Tkinter remains an old love of mine
  - Many, many projects here:
-   - DB Search &mdash; I wanted to create a no-code solution for building SQL queries. Kind of works, missing some small but crucial details on how tables relate to each other (only uses set intersections currently)
+   - **DB Search** &mdash; I wanted to create a no-code solution for building SQL queries. Kind of works, missing some small but crucial details on how tables relate to each other (only uses set intersections currently)
    - SWSE Business Management &mdash; I play as a "businessman" in a DnD campaign with friends and wanted to create a POS system for my character.
    - RPG &mdash; a fun ascii RPG that you can move around in (has a cool implementation for that, if you've got time)
 
