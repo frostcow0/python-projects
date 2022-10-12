@@ -4,7 +4,7 @@ import timeit
 
 from pandas.core.frame import DataFrame
 
-login_info = ['jmartin', 'yo6vW-lu']
+login_info = ['', '']
 
 def trial_1(login_info):
     dsn_tns = cx_Oracle.makedsn('ora-tns-qcc1.in.qservco.com', 1521, service_name = 'qcc1' )
