@@ -6,20 +6,27 @@
 import logging
 import streamlit as st
 import pandas as pd
-from main import get_recommendations, save_playlist
+from main import get_recommendations, get_user_data, save_playlist
 
 
 logging.basicConfig(level=logging.INFO)
 
-def run_recommender() -> pd.DataFrame:
-    """Calls run_flow and displays the recommended songs"""
-    formatted, raw = get_recommendations()
-    st.markdown("## Recommended songs below!")
+@st.cache(allow_output_mutation=True)
+def fetch_user_data() -> dict:
+    """Pulls user's saved and recently played songs"""
+    return get_user_data()
+
+def run_recommender(data:dict, method:str="cosine") -> pd.DataFrame:
+    """Calls get_recommendations and displays the recommended songs"""
+    formatted, raw = get_recommendations(data, method)
+    st.markdown(f"## Recommended songs using {method.title()} distance below!")
     st.write("Click the \"Save this Playlist\" button below"
         " to save these songs.")
     st.table(formatted)
     st.button(label="Save this playlist",
         on_click=lambda:save_playlist(raw))
+
+data = fetch_user_data()
 
 st.markdown("# Playlist Curator v0.5")
 st.write(("An app that, using your recently played songs,"
@@ -27,8 +34,10 @@ st.write(("An app that, using your recently played songs,"
 ))
 
 st.markdown("\n")
-submit = st.button(label="Create my playlist!",
-    on_click=run_recommender)
+submit = st.button(label="Use Cosine Distance",
+    on_click=lambda : run_recommender(data, method="cosine"))
+submit = st.button(label="Use Minkowski Distance",
+    on_click=lambda : run_recommender(data, method="minkowski"))
 
 st.markdown("\n")
-st.write("Made by Jon Martin, last updated 4/20/22")
+st.write("Made by Jon Martin, last updated 10/11/22")
