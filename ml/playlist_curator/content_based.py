@@ -76,15 +76,15 @@ class CosineRecommend():
         d = dot(v1,v2)
         return d/(norm(v1)*norm(v2))
 
-    def recommend(self, inputVec:pd.Series, n_rec:int):
+    def recommend(self, input_vec:pd.Series, n_rec:int):
         """
-        inputVec (dataframe): The dataframe
+        input_vec (dataframe): The dataframe
         n_rec (int): amount of rec user wants
         """
 
         # calculate similarity of input book_id vector w.r.t all other vectors
         self.saved_songs['sim']= self.saved_songs.apply(
-            lambda x: self.cosine_sim(inputVec, x.values), axis=1)
+            lambda x: self.cosine_sim(input_vec, x.values), axis=1)
 
         # returns top n user specified songs
         return self.saved_songs.nlargest(columns='sim',n=n_rec)
@@ -119,9 +119,9 @@ class MinkowskiRecommend():
             p_value) for a, b in zip(v1, v2)), p_value)
         )
 
-    def recommend(self, inputVec:pd.Series, n_rec:int, p_value:int=2):
+    def recommend(self, input_vec:pd.Series, n_rec:int, p_value:int=2):
         """
-        inputVec (dataframe): The dataframe
+        input_vec (dataframe): The dataframe
         n_rec (int): amount of rec user wants
         p (int): typically 1 or 2, corresponding to Manhattan
                     distance and Euclidean distance respectively
@@ -130,8 +130,12 @@ class MinkowskiRecommend():
         # calculate similarity of input song vector with
         # relation to all other vectors
         self.saved_songs['sim']= self.saved_songs.apply(
-            lambda x: self.minkowski_distance(inputVec,
+            lambda x: self.minkowski_distance(input_vec,
             x.values, p_value), axis=1)
+
+        # Converts to number format, throws an error using nlargest
+        # if we don't
+        self.saved_songs['sim'] = pd.to_numeric(self.saved_songs['sim'], errors='coerce')
 
         # returns top n user specified songs
         return self.saved_songs.nlargest(columns='sim',n=n_rec)
