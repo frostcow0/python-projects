@@ -11,6 +11,7 @@ from decimal import Decimal
 from numpy import dot
 from numpy.linalg import norm
 from sklearn.preprocessing import OneHotEncoder
+from abc import ABC, abstractmethod
 
 
 def normalize(data) -> list:
@@ -61,84 +62,92 @@ def ohe(saved:pd.DataFrame, last:pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFra
         pd.concat([last, ohe_df_l], axis = 1),
     )
 
-class CosineRecommend():
+def p_root(value:int, root:int) -> int:
+    """Calculate distance from value to root.
+
+    Args:
+        value (int): Some number
+        root (int): The p value in Minkowski distance
+
+    Returns:
+        int: The distance from the value to the root
     """
-    This class is for using the Cosine method of similarity
-    to recommend n songs.
-    """
-    def __init__(self, saved_songs:pd.DataFrame):
-        self.saved_songs = saved_songs
+    root_value = 1 / float(root)
+    return round(Decimal(value) ** Decimal(root_value), 3)
 
-    def cosine_sim(self, v1:pd.Series, v2:pd.Series) -> int:
+    # Should I implement pytest...?
+class Recommender(ABC):
+    """Super class for recommender methods."""
+
+    @abstractmethod
+    def measure_distance(self, vector_1:pd.Series, vector_2:pd.Series) -> float:
+        """Measures distance between vectors using some methodology."""
+
+    def recommend(self, goal_vector:pd.Series, comparison_set:pd.DataFrame,
+            n_rec:int) -> pd.DataFrame:
+        """Sorts the comparison_set by the rows' similarity to
+        the goal_vector and returns the comparison_set.
+
+        Args:
+            goal_vector (pd.Series): The vector by which we rank the comparison_set
+            comparison_set (pd.DataFrame): Set of vectors (rows) that we rank based on
+                similarity to the goal_vector
+            n_rec (int): The number of vectors from the comparison_set to return
+
+        Returns:
+            pd.DataFrame: Top (n_rec) vectors from the comparison_set ranked by
+                their similarity to the goal_vector
         """
-        This function will calculate the cosine similarity between two vectors
+        # calculate similarity of goal_vector w.r.t all other vectors
+        comparison_set['sim']= comparison_set.apply(
+            lambda x: self.measure_distance(goal_vector, x.values), axis=1)
+
+        # Converts to number format, sometimes throws an error using nlargest otherwise
+        comparison_set['sim'] = pd.to_numeric(comparison_set['sim'], errors='coerce')
+
+        # returns top n user specified vectors
+        return comparison_set.nlargest(columns='sim',n=n_rec)
+
+class CosineDistance(Recommender):
+    """Recommender subclass implementing Cosine Distance as a
+    measure of similarity."""
+
+    def measure_distance(self, vector_1:pd.Series, vector_2:pd.Series) -> float:
+        """Measures distance between vectors using Cosine Distance.
+
+        Args:
+            vector_1 (pd.Series): Vector of numbers
+            vector_2 (pd.Series): Vector of numbers
+
+        Returns:
+            float: Cosine distance between the vectors
         """
-        d = dot(v1,v2)
-        return d/(norm(v1)*norm(v2))
+        product = dot(vector_1,vector_2)
+        return product / (norm(vector_1) * norm(vector_2))
 
-    def recommend(self, input_vec:pd.Series, n_rec:int):
-        """
-        input_vec (dataframe): The dataframe
-        n_rec (int): amount of rec user wants
-        """
+class MinkowskiDistance(Recommender):
+    """Recommender subclass implementing Minkowski Distance as a
+    measure of similarity.
 
-        # calculate similarity of input book_id vector w.r.t all other vectors
-        self.saved_songs['sim']= self.saved_songs.apply(
-            lambda x: self.cosine_sim(input_vec, x.values), axis=1)
+    https://www.geeksforgeeks.org/minkowski-distance-python/"""
+    def __init__(self, p_value:int) -> None:
+        self.p_value = p_value
 
-        # returns top n user specified songs
-        return self.saved_songs.nlargest(columns='sim',n=n_rec)
+    def measure_distance(self, vector_1: pd.Series, vector_2: pd.Series) -> float:
+        """Measures distance between vectors using Minkowski Distance.
 
-class MinkowskiRecommend():
-    """
-    https://www.geeksforgeeks.org/minkowski-distance-python/
+        Args:
+            vector_1 (pd.Series): Vector of numbers
+            vector_2 (pd.Series): Vector of numbers
 
-    This class is for using the Minkowski method of similarity
-    to recommend n songs.
-    """
-    def __init__(self, saved_songs:pd.DataFrame):
-        self.saved_songs = saved_songs
-
-    def p_root(self, value:int, root:int) -> int:
-        """
-        Function distance between two points and
-        calculate distance value to given root
-        value (p is root value)
-        """
-        root_value = 1/float(root)
-        return round(Decimal(value)**Decimal(root_value),3)
-
-    def minkowski_distance(self, v1:pd.Series,
-            v2:pd.Series, p_value:int) -> int:
-        """
-        Pass the p_root function to calculate all the value of
-        vector parallelly.
+        Returns:
+            float: Minkowski distance between the vectors
         """
         return (
-            self.p_root (sum (pow (abs(a-b),
-            p_value) for a, b in zip(v1, v2)), p_value)
+            p_root(sum (pow (abs(a - b), self.p_value)
+                for a, b in zip(vector_1, vector_2)), self.p_value)
         )
 
-    def recommend(self, input_vec:pd.Series, n_rec:int, p_value:int=2):
-        """
-        input_vec (dataframe): The dataframe
-        n_rec (int): amount of rec user wants
-        p (int): typically 1 or 2, corresponding to Manhattan
-                    distance and Euclidean distance respectively
-        """
-
-        # calculate similarity of input song vector with
-        # relation to all other vectors
-        self.saved_songs['sim']= self.saved_songs.apply(
-            lambda x: self.minkowski_distance(input_vec,
-            x.values, p_value), axis=1)
-
-        # Converts to number format, throws an error using nlargest
-        # if we don't
-        self.saved_songs['sim'] = pd.to_numeric(self.saved_songs['sim'], errors='coerce')
-
-        # returns top n user specified songs
-        return self.saved_songs.nlargest(columns='sim',n=n_rec)
 
 if __name__ == '__main__':
     # constants
