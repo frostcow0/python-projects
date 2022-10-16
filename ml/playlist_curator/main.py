@@ -5,7 +5,7 @@ from datetime import date
 import pandas as pd
 import spotipy as spot
 
-from content_based import CosineRecommend, MinkowskiRecommend,normalize, ohe
+from content_based import CosineDistance, MinkowskiDistance, normalize, ohe
 
 
 # CONFIG = json.load(
@@ -51,22 +51,22 @@ def parse_track_info(item) -> list:
         artist_name, explicit, duration,
         song_popularity, album_release_date]
 
-def get_tracks_info(sp:spot.Spotify, tracks:list) -> pd.DataFrame:
+def get_tracks_info(client:spot.Spotify, tracks:list) -> pd.DataFrame:
     """Gets info for provided track IDs"""
-    response = sp.tracks(tracks)
+    response = client.tracks(tracks)
     tracks_info = [[track['name'], track['artists'][0]['name']] for track in response['tracks']]
     tracks_df = pd.DataFrame(tracks_info, columns=['Song Name', 'Artist Name'])
     tracks_df.index = [idx+1 for idx in tracks_df.index]
     return tracks_df
 
-def get_last_50_songs(sp:spot.Spotify) -> pd.DataFrame:
+def get_last_50_songs(client:spot.Spotify) -> pd.DataFrame:
     """Using the Spotify client, returns dataframe
     of the user's last 50 played songs.
 
-    :param sp (spot.Spotify): Spotify client
+    :param client (spot.Spotify): Spotify client
     :return df (pd.DataFrame): 50 last played songs
     """
-    response = sp.current_user_recently_played()
+    response = client.current_user_recently_played()
     all_tracks = [parse_track_info(item) for item in response['items']]
     headers = ['Track ID', 'Song Name',
         'Album Name', 'Artist Name', 'Explicit',
@@ -77,11 +77,11 @@ def get_last_50_songs(sp:spot.Spotify) -> pd.DataFrame:
         tracks_df.iloc[0])
     return tracks_df
 
-def get_saved_tracks(sp:spot.Spotify, limit:int=50) -> pd.DataFrame:
+def get_saved_tracks(client:spot.Spotify, limit:int=50) -> pd.DataFrame:
     """Using the Spotify client, returns dataframe
     of the user's last n saved tracks.
 
-    :param sp (spot.Spotify): Spotify client
+    :param client (spot.Spotify): Spotify client
     :param limit (int): Number of songs to retrieve
     """
     headers = ['Track ID', 'Song Name',
@@ -97,12 +97,12 @@ def get_saved_tracks(sp:spot.Spotify, limit:int=50) -> pd.DataFrame:
                 n = 50
             else:
                 n, limit = limit, 0
-            response = sp.current_user_saved_tracks(limit=n, offset=counter*50)
+            response = client.current_user_saved_tracks(limit=n, offset=counter*50)
             tracks = [parse_track_info(item) for item in response['items']]
             results.append(pd.DataFrame(tracks, columns=headers))
             counter += 1
     else:
-        response = sp.current_user_saved_tracks(limit=limit)
+        response = client.current_user_saved_tracks(limit=limit)
         tracks = [parse_track_info(item) for item in response['items']]
         results.append(pd.DataFrame(tracks, columns=headers))
     tracks_df = pd.concat(results, ignore_index=True)
@@ -134,42 +134,47 @@ def prep_dataframes(saved:pd.DataFrame, last:pd.DataFrame) -> Tuple[pd.DataFrame
     logging.info(" Prepped saved & last played songs")
     return df_s, df_l
 
-def run_cosine_sim(saved:pd.DataFrame, last:pd.DataFrame, n_rec:int=5) -> pd.DataFrame:
+def run_similarity(method:str, saved:pd.DataFrame, last:pd.DataFrame, n_rec:int=5) -> pd.DataFrame:
     """Uses cosine similarity to get recommended songs from the user's saved songs"""
+    # Prepping data
     prepped_saved, prepped_last = prep_dataframes(saved, last)
-    cos = CosineRecommend(saved_songs=prepped_saved)
     prepped_last.reset_index(drop=True, inplace=True)
     averaged_vector = prepped_last.mean(axis=0)
-    return cos.recommend(input_vec=averaged_vector, n_rec=n_rec)
 
-def run_minkowski_dist(saved:pd.DataFrame, last:pd.DataFrame, n_rec:int=5) -> pd.DataFrame:
-    """Uses minkowski distance to get recommended songs from the user's saved songs"""
-    prepped_saved, prepped_last = prep_dataframes(saved, last)
-    mink = MinkowskiRecommend(saved_songs=prepped_saved)
-    prepped_last.reset_index(drop=True, inplace=True)
-    averaged_vector = prepped_last.mean(axis=0)
-    return mink.recommend(input_vec=averaged_vector, n_rec=n_rec)
+    # Map of different recommender classes
+    recommenders = {
+        "cosine": CosineDistance(),
+        "minkowski": MinkowskiDistance(p_value=2),
+    }
 
-def create_playlist(sp:spot.Spotify, user_id:str) -> str:
+    # Get the class for the method
+    method_class = recommenders.get(method)
+
+    # Call the class's recommend method and return the result
+    distance = method_class.recommend(goal_vector=averaged_vector,
+        comparison_set=prepped_saved, n_rec=n_rec)
+    return distance
+
+def create_playlist(client:spot.Spotify, user_id:str) -> str:
     """Creates playlist for the user"""
     today = date.today().strftime("%m/%d/%Y")
     playlist_name = f"{today} Playlist"
     playlist_description = ("This playlist was made by Jon's Playlist Curator"
         f" on {today}. I hope you like it!")
-    sp.user_playlist_create(user=user_id,
+    client.user_playlist_create(user=user_id,
         name=playlist_name, description=playlist_description)
     logging.info(" Created the playlist for the user")
     return playlist_name
 
-def add_playlist_songs(sp:spot.Spotify, recommended:pd.DataFrame, user_id:str) -> None:
+def add_playlist_songs(client:spot.Spotify, recommended:pd.DataFrame, user_id:str) -> None:
     """Adds songs to user's most recently made playlist"""
-    created_playlist = sp.user_playlists(user=user_id, limit=1)
+    created_playlist = client.user_playlists(user=user_id, limit=1)
     playlist_id = created_playlist['items'][0]['id']
-    sp.user_playlist_add_tracks(user=user_id, playlist_id=playlist_id,
+    client.user_playlist_add_tracks(user=user_id, playlist_id=playlist_id,
         tracks=recommended.index)
     logging.info(" Added the recommended tracks to the playlist")
 
-def add_audio_features(sp:spot.Spotify, tracks:pd.DataFrame, limit:int=50) -> pd.Series:
+def add_audio_features(client:spot.Spotify, tracks:pd.DataFrame, limit:int=50) -> pd.Series:
     """Uses's Spotify's audio_features api call to build a Series of
     tracks and their features"""
     df = tracks.copy()
@@ -184,7 +189,7 @@ def add_audio_features(sp:spot.Spotify, tracks:pd.DataFrame, limit:int=50) -> pd
             start = counter * 50
             end = start + 50
             track_ids = tracks.loc[start:end ,"Track ID"]
-            result = sp.audio_features(track_ids)
+            result = client.audio_features(track_ids)
             result_df = pd.DataFrame.from_dict(result)
             if counter == 0:
                 df = pd.merge(df, result_df,
@@ -195,7 +200,7 @@ def add_audio_features(sp:spot.Spotify, tracks:pd.DataFrame, limit:int=50) -> pd
             counter += 1
     else:
         track_ids = df.loc[:, "Track ID"]
-        result = sp.audio_features(track_ids)
+        result = client.audio_features(track_ids)
         result_df = pd.DataFrame.from_dict(result)
         df = pd.merge(df, result_df,
             left_on="Track ID", right_on="id")
@@ -227,13 +232,9 @@ def get_user_data():
 
 def get_recommendations(data:dict, method:str="cosine"):
     """Testing flow"""
-    logging.info(" Getting recommendations")
-    if method == "cosine":
-        recommended = run_cosine_sim(data["feature_saved"],
-            data["feature_50"], n_rec=20)
-    elif method == "minkowski":
-        recommended = run_minkowski_dist(data["feature_saved"],
-            data["feature_50"], n_rec=20)
+    logging.info(" Getting recommendations using %s distance", method)
+    recommended = run_similarity(method=method, saved=data["feature_saved"],
+        last=data["feature_50"], n_rec=20)
     logging.info(" Formatting recommendations")
     nice_format_recommend = get_tracks_info(data["spotify"], recommended.index)
     logging.info(" The recommended songs are: \n%s",
