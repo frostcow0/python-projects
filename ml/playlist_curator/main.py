@@ -21,7 +21,7 @@ def set_env_variables():
     os.environ["SPOTIPY_CLIENT_SECRET"] = "8827668f8ed64f13bf8c2e83781c3997"
     os.environ["SPOTIPY_REDIRECT_URI"] = "http://localhost:8080"
 
-def get_token() -> str:
+def get_token():
     """Returns Spotify token string from config credentials.
     Uses the Authorization flow.
 
@@ -206,10 +206,16 @@ def add_audio_features(client:spot.Spotify, tracks:pd.DataFrame, limit:int=50) -
             left_on="Track ID", right_on="id")
     df = df.drop(labels=["id", "uri", "track_href",
         "analysis_url", "type"], axis=1)
+    # For some reason I started getting an extra column
+    # with 0 as the header and all of the values were empty....
+    if 0 in df.columns.tolist():
+        df = df.drop(labels=[0], axis=1)
     return df
 
 def get_user_data():
     """Gets user's saved and recently played songs"""
+    # n songs to retrieve from user's saved songs
+    saved_count = 2000
     # Get token & Spotify client to get last 50 songs
     set_env_variables() # for running locally
     logging.info(" Requesting token")
@@ -217,9 +223,9 @@ def get_user_data():
     logging.info(" Creating Spotify client")
     spotify = spot.Spotify(auth=token)
     logging.info(" Getting saved tracks")
-    saved = get_saved_tracks(spotify, limit=2000)
+    saved = get_saved_tracks(spotify, limit=saved_count)
     logging.info(" Getting audio features for saved tracks")
-    feature_saved = add_audio_features(spotify, saved, limit=2000)
+    feature_saved = add_audio_features(spotify, saved, limit=saved_count)
     logging.info(" Getting recently played songs")
     last_50 = get_last_50_songs(spotify)
     logging.info(" Getting audio features for recent tracks")
@@ -258,4 +264,6 @@ def save_playlist(recommended:pd.DataFrame):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    get_recommendations()
+    data = get_user_data()
+    data['feature_saved'].to_csv('saved.csv')
+    data['feature_50'].to_csv('recent.csv')
