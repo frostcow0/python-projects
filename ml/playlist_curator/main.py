@@ -5,7 +5,7 @@ from datetime import date
 import pandas as pd
 import spotipy as spot
 
-from content_based import CosineDistance, MinkowskiDistance, normalize, ohe
+from content_based import CosineDistance, MinkowskiDistance, ohe, encode_year
 
 
 # CONFIG = json.load(
@@ -44,12 +44,10 @@ def parse_track_info(item) -> list:
     album_name = track['album']['name']
     artist_name = track['artists'][0]['name']
     explicit = track['explicit']
-    duration = track['duration_ms']
     song_popularity = track['popularity']
     album_release_date = track['album']['release_date']
     return [track_id, song_name, album_name,
-        artist_name, explicit, duration,
-        song_popularity, album_release_date]
+        artist_name, explicit, song_popularity, album_release_date]
 
 def get_tracks_info(client:spot.Spotify, tracks:list) -> pd.DataFrame:
     """Gets info for provided track IDs"""
@@ -70,9 +68,13 @@ def get_last_50_songs(client:spot.Spotify) -> pd.DataFrame:
     all_tracks = [parse_track_info(item) for item in response['items']]
     headers = ['Track ID', 'Song Name',
         'Album Name', 'Artist Name', 'Explicit',
-        'Duration', 'Song Popularity',
-        'Album Release Date']
+        'Song Popularity', 'Album Release Date']
     tracks_df = pd.DataFrame(all_tracks, columns=headers)
+    # Replace Album Release Date with Album Release Year
+    tracks_df["Album Release Year"] = pd.to_datetime(
+        tracks_df["Album Release Date"],
+        errors="coerce").dt.year
+    tracks_df.drop(["Album Release Date"], axis=1, inplace=True)
     logging.info(" Formatted last 50 played tracks in a DataFrame: \n%s",
         tracks_df.iloc[0])
     return tracks_df
@@ -85,9 +87,8 @@ def get_saved_tracks(client:spot.Spotify, limit:int=50) -> pd.DataFrame:
     :param limit (int): Number of songs to retrieve
     """
     headers = ['Track ID', 'Song Name',
-        'Album Name', 'Artist Name', 'Explicit',
-        'Duration', 'Song Popularity',
-        'Album Release Date']
+        'Album Name', 'Artist Name', 'Explicit', 
+        'Song Popularity', 'Album Release Date']
     results = []
     if limit > 50: # Spotify's request limit is 50
         counter = 0
@@ -106,33 +107,43 @@ def get_saved_tracks(client:spot.Spotify, limit:int=50) -> pd.DataFrame:
         tracks = [parse_track_info(item) for item in response['items']]
         results.append(pd.DataFrame(tracks, columns=headers))
     tracks_df = pd.concat(results, ignore_index=True)
+    # Replace Album Release Date with Album Release Year
+    tracks_df["Album Release Year"] = pd.to_datetime(
+        tracks_df["Album Release Date"],
+        errors="coerce").dt.year
+    tracks_df.drop(["Album Release Date"], axis=1, inplace=True)
     logging.info(" Formatted %s most recent saved tracks in a DataFrame: \n%s",
         tracks_df.shape[0], tracks_df.iloc[0])
     return tracks_df
 
 def prep_dataframes(saved:pd.DataFrame, last:pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Helper function for get_recommendation"""
-    df_s = saved.copy()
-    df_l = last.copy()
 
-    # normalize the num_pages, ratings, price columns
-    df_s['duration_norm'] = normalize(df_s['Duration'].values)
-    df_s['song_popularity'] = normalize(df_s['Song Popularity'].values)
-    df_l['duration_norm'] = normalize(df_l['Duration'].values)
-    df_l['song_popularity'] = normalize(df_l['Song Popularity'].values)
+    # Not sure what to normalize and what not to...
+    # I think it's fine for the distance measures I'm using
+    # and probably for Random Forest as well, but past that...? no
 
-    # OHE on Album Release Date and Explicit - have to be done together
-    df_s, df_l = ohe(saved=df_s, last=df_l)
+    # cols_to_normalize = ['']
+    # saved['duration_norm'] = normalize(saved['Duration'].values)
+    # saved['song_popularity'] = normalize(saved['Song Popularity'].values)
+    # last['duration_norm'] = normalize(last['Duration'].values)
+    # last['song_popularity'] = normalize(last['Song Popularity'].values)
 
-    # drop redundant columns
-    cols = ['Duration', 'Song Popularity',
-        'Song Name', 'Album Name', 'Artist Name']
-    df_s.drop(columns = cols, inplace = True)
-    df_s.set_index('Track ID', inplace = True)
-    df_l.drop(columns = cols, inplace = True)
-    df_l.set_index('Track ID', inplace = True)
+    # OHE Explicit, Ordinally Encode the Album Release Year
+    saved, last = ohe(saved=saved, last=last)
+    saved, last = encode_year(saved=saved, last=last)
+
+    # Drop columns not used in recommendation
+    cols = ['Song Popularity', 'Song Name', 'Album Name', 'Artist Name']
+    saved.drop(columns = cols, inplace = True)
+    last.drop(columns = cols, inplace = True)
+
+    # Set the index of each to the Track ID
+    saved.set_index('Track ID', inplace = True)
+    last.set_index('Track ID', inplace = True)
+
     logging.info(" Prepped saved & last played songs")
-    return df_s, df_l
+    return saved, last
 
 def run_similarity(method:str, saved:pd.DataFrame, last:pd.DataFrame, n_rec:int=5) -> pd.DataFrame:
     """Uses cosine similarity to get recommended songs from the user's saved songs"""
@@ -177,7 +188,7 @@ def add_playlist_songs(client:spot.Spotify, recommended:pd.DataFrame, user_id:st
 def add_audio_features(client:spot.Spotify, tracks:pd.DataFrame, limit:int=50) -> pd.Series:
     """Uses's Spotify's audio_features api call to build a Series of
     tracks and their features"""
-    df = tracks.copy()
+    results = []
     if limit > 50: # Spotify's request limit is 50
         counter = 0
         while limit > 0:
@@ -190,26 +201,17 @@ def add_audio_features(client:spot.Spotify, tracks:pd.DataFrame, limit:int=50) -
             end = start + 50
             track_ids = tracks.loc[start:end ,"Track ID"]
             result = client.audio_features(track_ids)
-            result_df = pd.DataFrame.from_dict(result)
-            if counter == 0:
-                df = pd.merge(df, result_df,
-                    left_on="Track ID", right_on="id")
-            else:
-                df = pd.concat([df, result_df],
-                    ignore_index=True)
+            results.append(pd.DataFrame.from_dict(result))
             counter += 1
     else:
-        track_ids = df.loc[:, "Track ID"]
+        track_ids = tracks.loc[:, "Track ID"]
         result = client.audio_features(track_ids)
-        result_df = pd.DataFrame.from_dict(result)
-        df = pd.merge(df, result_df,
-            left_on="Track ID", right_on="id")
-    df = df.drop(labels=["id", "uri", "track_href",
-        "analysis_url", "type"], axis=1)
-    # For some reason I started getting an extra column
-    # with 0 as the header and all of the values were empty....
-    if 0 in df.columns.tolist():
-        df = df.drop(labels=[0], axis=1)
+        results.append(pd.DataFrame.from_dict(result))
+    result_df = pd.concat(results, ignore_index=True)
+    df = pd.merge(tracks, result_df,
+        left_on="Track ID", right_on="id")
+    df.drop(labels=["id", "uri", "track_href",
+        "analysis_url", "type"], axis=1, inplace=True)
     return df
 
 def get_user_data():
@@ -236,13 +238,13 @@ def get_user_data():
         "feature_50": feature_50,
     }
 
-def get_recommendations(data:dict, method:str="cosine"):
+def get_recommendations(song_data:dict, method:str="cosine"):
     """Testing flow"""
     logging.info(" Getting recommendations using %s distance", method)
-    recommended = run_similarity(method=method, saved=data["feature_saved"],
-        last=data["feature_50"], n_rec=20)
+    recommended = run_similarity(method=method, saved=song_data["feature_saved"],
+        last=song_data["feature_50"], n_rec=20)
     logging.info(" Formatting recommendations")
-    nice_format_recommend = get_tracks_info(data["spotify"], recommended.index)
+    nice_format_recommend = get_tracks_info(song_data["spotify"], recommended.index)
     logging.info(" The recommended songs are: \n%s",
         nice_format_recommend)
     return nice_format_recommend, recommended
@@ -257,13 +259,15 @@ def save_playlist(recommended:pd.DataFrame):
 
     # Future additions:
     #   add genre to the songs (from artist)
-    #   add audio features per song (heavy compute cost, big benefit)
+    #   add more audio features per song (heavy compute cost, big benefit)
     #   store saved songs to add collaborative filtering/hybrid algorithm
     #   edit playlist songs if they've already used this to make a playlist today
+    #   swap OHE for the album year to ordinal encoding (check Missing Values on Obsidian)
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     data = get_user_data()
-    data['feature_saved'].to_csv('saved.csv')
-    data['feature_50'].to_csv('recent.csv')
+    # get_recommendations(data)
+    # data['feature_saved'].to_csv('saved.csv')
+    # data['feature_50'].to_csv('recent.csv')
