@@ -4,14 +4,15 @@
 # decide the distance method used, or I make a Super Class for the
 # different potential methods
 
-from math import pow
-import pandas as pd
 from typing import Tuple
 from decimal import Decimal
+from abc import ABC, abstractmethod
 from numpy import dot
 from numpy.linalg import norm
 from sklearn.preprocessing import OneHotEncoder
-from abc import ABC, abstractmethod
+
+import pandas as pd
+import numpy as np
 
 
 def normalize(data) -> list:
@@ -45,14 +46,19 @@ def encode_year(saved:pd.DataFrame, last:pd.DataFrame) -> Tuple[pd.DataFrame, pd
     # Could easily be altered to dynamically encode a dictionary of
     # columns to their new column names
 
-    min_yr = saved["Album Release Year"].min()
-    max_yr = saved["Album Release Year"].max()
+    min_year = saved["Album Release Year"].min()
+    max_year = saved["Album Release Year"].max()
+    year_range = int(max_year - min_year)
+    print(year_range)
 
     year_encodings = {}
 
     # Plus 1 to include the max year :)
-    for count in range(max_yr - min_yr + 1):
-        year_encodings[min_yr + count] = count
+    for count in range(year_range + 1):
+        year_encodings[min_year + count] = count
+
+    # Assign empty years to the most recent year's value + 1
+    year_encodings[np.nan] = year_range + 1
 
     # In this instance, map is a Series method that can take a dictionary
     # and, using the original Series's values as keys, returns a Series
