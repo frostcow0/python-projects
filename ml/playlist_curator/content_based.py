@@ -30,6 +30,42 @@ def normalize(data) -> list:
     max_val = max(data)
     return [x/max_val for x in data]
 
+def encode_year(saved:pd.DataFrame, last:pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """Ordinally encodes the Album Release Year column for both the user's
+    recently played and saved songs.
+
+    Args:
+        saved (pd.DataFrame): Dataframe of the user's saved songs
+        last (pd.DataFrame): Dataframe of the user's recently played songs
+
+    Returns:
+        Tuple[pd.DataFrame, pd.DataFrame]: Tuple containing saved & last with the
+            added encoding as a new column, Year
+    """
+    # Could easily be altered to dynamically encode a dictionary of
+    # columns to their new column names
+
+    min_yr = saved["Album Release Year"].min()
+    max_yr = saved["Album Release Year"].max()
+
+    year_encodings = {}
+
+    # Plus 1 to include the max year :)
+    for count in range(max_yr - min_yr + 1):
+        year_encodings[min_yr + count] = count
+
+    # In this instance, map is a Series method that can take a dictionary
+    # and, using the original Series's values as keys, returns a Series
+    # with the corresponding values from the dictionary
+    saved["Year"] = saved["Album Release Year"].map(year_encodings)
+    last["Year"] = last["Album Release Year"].map(year_encodings)
+
+    # Drop the source columns
+    saved.drop(["Album Release Year"], axis=1, inplace=True)
+    last.drop(["Album Release Year"], axis=1, inplace=True)
+
+    return saved, last
+
 def ohe(saved:pd.DataFrame, last:pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
     '''
     This function will one hot encode the specified columns and add it back
@@ -44,23 +80,28 @@ def ohe(saved:pd.DataFrame, last:pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFra
         A tuple of the dataframes with OHE columns replacing the originals
     '''
     # Categorical columns to One-hot Encode
-    cat_cols = ["Album Release Date", "Explicit"]
+    cat_cols = ["Explicit"]
+
     # Ignore is what allows us to have consistent dataframe shapes
     # https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.OneHotEncoder.html
     OH_encoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
+
     # Order is important here, last has to be fit before saved
     ohe_df_l = pd.DataFrame(OH_encoder.fit_transform(last[cat_cols]))
     ohe_df_s = pd.DataFrame(OH_encoder.transform(saved[cat_cols]))
+
     # OHE loses index, so we re-apply (according to my Udemy notes)
     ohe_df_l.index = last.index
     ohe_df_s.index = saved.index
-    # Drop the original categorical columns
-    last.drop(cat_cols, axis=1, inplace=True)
-    saved.drop(cat_cols, axis=1, inplace=True)
-    return (
-        pd.concat([saved, ohe_df_s], axis = 1),
-        pd.concat([last, ohe_df_l], axis = 1),
-    )
+
+    # Create result dataframes & drop original categorical columns
+    ohe_saved = pd.concat([saved, ohe_df_s], axis = 1)
+    ohe_last = pd.concat([last, ohe_df_l], axis = 1)
+
+    ohe_saved.drop(cat_cols, axis=1, inplace=True)
+    ohe_last.drop(cat_cols, axis=1, inplace=True)
+
+    return ohe_saved, ohe_last
 
 def p_root(value:int, root:int) -> int:
     """Calculate distance from value to root.
