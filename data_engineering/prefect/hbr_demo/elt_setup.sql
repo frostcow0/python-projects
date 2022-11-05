@@ -1,0 +1,2 @@
+CREATE DATABASE prefect_demo
+GO
