@@ -1,0 +1,52 @@
+###
+### A complete description of a Prefect Deployment for flow 'covid-data'
+###
+name: covid-deployment
+description: |-
+  Gets json data from the provided url and formats it as
+  a pandas dataframe before saving to a CSV with the provided filename.
+
+  Args:
+      url (str): The url to the json file/data
+      filename (str): The filename that the CSV will be called
+version: 202cabd94fd3eea089392ce881db2370
+# The work queue that will handle this deployment's runs
+work_queue_name: default
+tags:
+- dev
+parameters: {}
+schedule: null
+infra_overrides: {}
+infrastructure:
+  type: process
+  env: {}
+  labels: {}
+  name: null
+  command: null
+  stream_output: true
+  working_dir: null
+  block_type_slug: process
+  _block_type_slug: process
+
+###
+### DO NOT EDIT BELOW THIS LINE
+###
+flow_name: covid-data
+manifest_path: null
+storage: null
+path: C:\Users\gamet\OneDrive\Desktop\python-projects\data_engineering\prefect
+entrypoint: prefect_flow_example.py:covid_data
+parameter_openapi_schema:
+  title: Parameters
+  type: object
+  properties:
+    url:
+      title: url
+      type: string
+    filename:
+      title: filename
+      type: string
+  required:
+  - url
+  - filename
+  definitions: null
