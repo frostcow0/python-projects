@@ -49,7 +49,6 @@ def encode_year(saved:pd.DataFrame, last:pd.DataFrame) -> Tuple[pd.DataFrame, pd
     min_year = saved["Album Release Year"].min()
     max_year = saved["Album Release Year"].max()
     year_range = int(max_year - min_year)
-    print(year_range)
 
     year_encodings = {}
 
@@ -152,7 +151,7 @@ class Recommender(ABC):
         # Converts to number format, sometimes throws an error using nlargest otherwise
         comparison_set['sim'] = pd.to_numeric(comparison_set['sim'], errors='coerce')
 
-        # returns top n user specified vectors
+        # Returns top n user specified vectors
         return comparison_set.nlargest(columns='sim',n=n_rec)
 
 class CosineDistance(Recommender):
@@ -197,33 +196,4 @@ class MinkowskiDistance(Recommender):
 
 
 if __name__ == '__main__':
-    # constants
-    PATH = 'song_recommender/data/data.csv'
-
-    # import data
-    df = pd.read_csv(PATH)
-
-    # normalize the num_pages, ratings, price columns
-    df['duration_norm'] = normalize(df['Duration'].values)
-    df['song_popularity'] = normalize(df['Song Popularity'].values)
-    # df['book_price_norm'] = normalize(df['book_price'].values)
-
-    # OHE on publish_year and genre
-    # df = ohe(saved = df, enc_col = 'Album Release Date')
-    # df = ohe(saved = df, enc_col = 'Explicit')
-    # df = ohe(df = df, enc_col = 'Song Name')
-
-    # df['track_id'], _ = pd.factorize(df['Track ID'])
-
-    # drop redundant columns
-    cols = ['Duration', 'Song Popularity', 'Album Release Date',
-        'Song Name', 'Album Name', 'Artist Name', 'Explicit']
-    df.drop(columns = cols, inplace = True)
-    df.set_index('Track ID', inplace = True)
-
-    # ran on a sample as an example
-    t = df.copy()
-    t.drop(columns=['Unnamed: 0'], inplace=True)
-    print(t.head())
-    cbr = CosineRecommend(saved_songs = t)
-    # print(cbr.recommend(track_id = t.index[0], n_rec = 5))
+    print('yea boi')
