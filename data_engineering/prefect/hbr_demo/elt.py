@@ -46,7 +46,7 @@ def read_directory(directory:str) -> List[pd.DataFrame]:
             data.append(pd.read_json(f"{directory}/{file}"))
 
         elif file_extension == "csv":
-            data.append(pd.read_csv(f"{directory}/{file}"))
+            data.append(pd.read_csv(f"{directory}/{file}", index_col="Unnamed: 0"))
 
         elif file_extension in ("xlsx", "xls"):
             data.append(pd.read_excel(f"{directory}/{file}"))
@@ -84,7 +84,7 @@ def save_dataframe(directory:str, data:pd.DataFrame, filename:str):
     data.to_csv(f'{directory}/{filename}')
 
 @task
-def store_dataframe(data:pd.DataFrame, server:str, database:str, table:str):
+def store_dataframe(data:pd.DataFrame, server:str, database:str, table:str, connection):
     """Stores provided dataframe to the provided server & database at the
     provided table.
 
@@ -95,15 +95,11 @@ def store_dataframe(data:pd.DataFrame, server:str, database:str, table:str):
         table (str): Table name to store the dataframe in
     """
     # Not specifying user & password means it uses Window Authentication
-    engine = sqlalchemy.create_engine(
-        f"mssql+pyodbc://{server}/{database}?driver=SQL+Server",
-        echo=False)
-
-    with engine.connect() as connection:
-        data.to_sql(
-            name=table,
-            con=connection,
-            if_exists='replace')
+    # Would be Trusted_Connection=yes if using pyodbc
+    data.to_sql(
+        name=table,
+        con=connection,
+        if_exists='replace')
 
 @flow
 def elt(directory:str="data", url:str=OWID_COVID_URL, filename:str="covid.csv", server:str="FETTUCCINE",
@@ -121,18 +117,25 @@ def elt(directory:str="data", url:str=OWID_COVID_URL, filename:str="covid.csv", 
     save_dataframe(directory=directory, data=data, filename=filename)
     # Formats the COVID data for ease and usability
     prepped_data = prep_dataframe(data=data)
-    # Stores the formatted COVID data to SQL
-    store_dataframe(data=prepped_data, server=server, database=database, table=table)
+    # Create engine for connecting to the database
+    engine = sqlalchemy.create_engine(
+        f"mssql+pyodbc://{server}/{database}?driver=SQL+Server",
+        echo=False)
+    # Begin a transaction
+    # (Need to reference flight wrangler for transaction connect)
+    with engine.connect() as connection:
+        # Stores the formatted COVID data to the database
+        store_dataframe(data=prepped_data, server=server, database=database, 
+            table=table, connection=connection)
 
     # Repeat the process for CSV, JSON, & Excel files in a given directory
     dir_data = read_directory(directory=directory)
-    # This is called df and not data because you shouldn't reuse variable names
-
-    #### This doesn't work yet, for some reason the data isn't reading in to the right format for prep_dataframe
-    #### Need to use these funcs in notebook
-    # for df in dir_data:
-    #     prepped_df = prep_dataframe(data=df)
-    #     store_dataframe(data=df, server=server, database=database, table=table)
+    with engine.connect() as connection:
+        # This is called df and not data because you shouldn't reuse variable names
+        for df in dir_data:
+            prepped_df = prep_dataframe(data=df)
+            store_dataframe(data=prepped_df, server=server, database=database,
+                table=table, connection=connection)
 
 
 if __name__ == "__main__":
