@@ -87,7 +87,7 @@ def get_saved_tracks(client:spot.Spotify, limit:int=50) -> pd.DataFrame:
     :param limit (int): Number of songs to retrieve
     """
     headers = ['Track ID', 'Song Name',
-        'Album Name', 'Artist Name', 'Explicit', 
+        'Album Name', 'Artist Name', 'Explicit',
         'Song Popularity', 'Album Release Date']
     results = []
     if limit > 50: # Spotify's request limit is 50
@@ -212,6 +212,8 @@ def add_audio_features(client:spot.Spotify, tracks:pd.DataFrame, limit:int=50) -
         left_on="Track ID", right_on="id")
     df.drop(labels=["id", "uri", "track_href",
         "analysis_url", "type"], axis=1, inplace=True)
+    if 0 in df.columns:
+        df.drop(labels=[0], axis=1, inplace=True)
     return df
 
 def get_user_data():
