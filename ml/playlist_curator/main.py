@@ -114,6 +114,11 @@ def get_saved_tracks(client:spot.Spotify, limit:int=50) -> pd.DataFrame:
     tracks_df.drop(["Album Release Date"], axis=1, inplace=True)
     logging.info(" Formatted %s most recent saved tracks in a DataFrame: \n%s",
         tracks_df.shape[0], tracks_df.iloc[0])
+    # Remove duplicate song name/artist name combos
+    # incase the user liked a single & album version of a song
+    tracks_df = tracks_df.drop_duplicates(
+        subset=["Song Name", "Artist Name"],
+        keep="last").reset_index(drop=True)
     return tracks_df
 
 def prep_dataframes(saved:pd.DataFrame, last:pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
