@@ -46,8 +46,18 @@ def encode_year(saved:pd.DataFrame, last:pd.DataFrame) -> Tuple[pd.DataFrame, pd
     # Could easily be altered to dynamically encode a dictionary of
     # columns to their new column names
 
-    min_year = saved["Album Release Year"].min()
-    max_year = saved["Album Release Year"].max()
+    # Use the earliest year
+    if saved["Album Release Year"].min() > last["Album Release Year"].min():
+        min_year = saved["Album Release Year"].min()
+    else:
+        min_year = last["Album Release Year"].min()
+
+    # Use the latest year
+    if saved["Album Release Year"].max() > last["Album Release Year"].max():
+        max_year = saved["Album Release Year"].max()
+    else:
+        max_year = last["Album Release Year"].max()
+
     year_range = int(max_year - min_year)
 
     year_encodings = {}
