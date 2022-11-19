@@ -1,6 +1,6 @@
 import logging
 from flask import Flask, render_template, request
-from main import run_flow
+# from main import run_flow
 
 
 app = Flask(__name__, static_folder='static',
@@ -13,7 +13,7 @@ def index():
     """Home page"""
     if request.method == "POST":
         logging.info(" Made a POST request!")
-        run_flow()
+        # run_flow()
     else:
         logging.info(" Made a GET request!")
     return render_template("index.html")
