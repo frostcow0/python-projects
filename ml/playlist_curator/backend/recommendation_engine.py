@@ -277,8 +277,6 @@ def save_playlist(recommended:pd.DataFrame):
     #   add more audio features per song (heavy compute cost, big benefit)
     #   store saved songs to add collaborative filtering/hybrid algorithm
     #   edit playlist songs if they've already used this to make a playlist today
-    #   swap OHE for the album year to ordinal encoding (check Missing Values on Obsidian)
-    #   some songs show up twice b/c they're a single & in an album - drop duplicate song name & artist name combos
 
 
 if __name__ == "__main__":
