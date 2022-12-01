@@ -3,7 +3,7 @@
 
 - `conda activate prefect2`
 
-- `conda install prefect -y`
+- `conda install -c conda-forge prefect -y`
 
 ## Setting up Prefect Orion Server (in same terminal):
 - `prefect orion start`
