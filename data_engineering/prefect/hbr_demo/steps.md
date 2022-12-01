@@ -1,11 +1,9 @@
 ## Sequential conda commands (in terminal):
-- `conda create -n prefect2 python=3.9`
+- `conda create -n prefect2 python=3.9 pandas`
 
 - `conda activate prefect2`
 
 - `conda install prefect -y`
-
-- `conda install pandas -y`
 
 ## Setting up Prefect Orion Server (in same terminal):
 - `prefect orion start`
