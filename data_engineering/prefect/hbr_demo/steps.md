@@ -11,7 +11,7 @@
 ## Build & apply deployment for the example flow (new terminal):
 - `conda activate prefect2`
 
-- `prefect deployment build SCRIPT_NAME.py:FLOW_NAME -t dev`
+- `prefect deployment build SCRIPT_NAME.py:FLOW_NAME -n FLOW_NAME-deployment -t dev`
 
 - `prefect deployment apply FLOW_NAME-deployment.yaml`
 
