@@ -15,3 +15,4 @@
 
 - `prefect deployment apply FLOW_NAME-deployment.yaml`
 
+Once you apply the deployment yaml file, the console will tell you to run `prefect agent start -q 'default'`. It's important that you ACTUALLY run `prefect agent start -q default`, without the single quotes around default, or your flow won't make it into the queue you've made.
