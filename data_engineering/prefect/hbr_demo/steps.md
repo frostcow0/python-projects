@@ -5,6 +5,8 @@
 
 - `conda install -c conda-forge prefect -y`
 
+This is all you have to have to be able to run the .py scripts. If you want to schedule tasks & use the UI, follow the steps below :).
+
 ## Setting up Prefect Orion Server (in same terminal):
 - `prefect orion start`
 
