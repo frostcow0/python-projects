@@ -11,5 +11,5 @@ MarkupSafe==2.0.1
 pycparser==2.21
 PyYAML==6.0
 serial==0.0.97
-Werkzeug==2.0.2
+Werkzeug==2.2.3
 confluent-kafka[avro]==1.7.0
