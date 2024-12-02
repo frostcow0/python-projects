@@ -61,7 +61,7 @@ pip==21.2.4
 platformdirs==2.4.0
 prometheus-client==0.14.1
 prompt-toolkit==3.0.29
-protobuf==3.20.0
+protobuf==3.20.2
 psutil==5.9.0
 pure-eval==0.2.2
 pyarrow==7.0.0
