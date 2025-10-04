@@ -1,13 +1,10 @@
-try:
-    from tkinter import *
-except ImportError:
-    from Tkinter import*
+from tkinter import *
+import rpg as rpg
+
     
 root=Tk()
 root.title('Start Screen')
 #root.geometry('300x300')
-
-import rpg
 
 class Home(Frame):
     def __init__(self,master):
