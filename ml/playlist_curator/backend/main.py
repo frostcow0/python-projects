@@ -3,11 +3,13 @@
 Utilizes FastAPI to serve user's songs and recommendations"""
 
 import uvicorn
-import pandas as pd
-from fastapi import FastAPI
-from recommendation_engine import get_user_data, get_recommendations
-from pydantic import BaseModel
 import logging
+import pandas as pd
+from sys import stdout
+from datetime import date
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from recommendation_engine import get_user_data, get_recommendations, save_playlist
 
 
 class SongData(BaseModel):
@@ -18,13 +20,24 @@ class Recommendations(BaseModel):
     formatted: dict
     raw: dict
 
+class SongsToSave(BaseModel):
+    recommended: str
+
 app = FastAPI()
 
-logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("FastAPI_Backend")
+sh = logging.StreamHandler(stdout)
+fh = logging.FileHandler(f"../logs/backend_errors_{date.today()}.log")
+sh.setLevel(logging.INFO)
+fh.setLevel(logging.WARNING)
+logger.addHandler(sh)
+logger.addHandler(fh)
 
 @app.get("/user_data")
 def user_data() -> dict:
     data = get_user_data()
+    if "error_code" in data.keys():
+        raise HTTPException(status_code=data["error_code"])
     return data
 
 @app.post("/minkowski_recommend")
@@ -36,11 +49,13 @@ def mink_recommend(song_dict:SongData) -> dict:
     formatted, raw = get_recommendations(song_data=frames, method="minkowski")
     return Recommendations(formatted=formatted.to_dict(), raw=raw.to_dict())
 
-@app.post("/test_post/{text}")
-def test_post(text:str):
-    print(text)
-    return text
+@app.post("/save_playlist")
+def save_recommended(song_dict:SongsToSave) -> dict:
+    recommended = pd.read_json(song_dict.recommended),
+    save_playlist(recommended=recommended)
+    return None
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8080)
+    # uvicorn.run("main:app", host="0.0.0.0", port=8080)
+    uvicorn.run("main:app")
