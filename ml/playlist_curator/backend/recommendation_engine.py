@@ -1,10 +1,10 @@
 import os
 import logging
-from typing import Tuple
-from datetime import date
 import pandas as pd
 import spotipy as spot
-
+from typing import Tuple
+from datetime import date
+from sys import stdout
 from content_based import CosineDistance, MinkowskiDistance, ohe, encode_year
 
 
@@ -19,6 +19,8 @@ def set_env_variables():
     """Manually sets environment variables"""
     os.environ["SPOTIPY_CLIENT_ID"] = "468b8b024bfb41d5b1957dad2afc766a"
     os.environ["SPOTIPY_CLIENT_SECRET"] = "8827668f8ed64f13bf8c2e83781c3997"
+    # os.environ["SPOTIPY_CLIENT_ID"] = "d03f979329304b7ca45e2225f616c3e7"
+    # os.environ["SPOTIPY_CLIENT_SECRET"] = "22d6ade9e27045bb94f125d87b310f6d"
     os.environ["SPOTIPY_REDIRECT_URI"] = "http://localhost:8080"
 
 def get_token():
@@ -138,6 +140,9 @@ def prep_dataframes(saved:pd.DataFrame, last:pd.DataFrame) -> Tuple[pd.DataFrame
     saved, last = ohe(saved=saved, last=last)
     saved, last = encode_year(saved=saved, last=last)
 
+    # Drop duplicate songs from saved (i.e., if they liked a single and it re-released in an album)
+    saved.drop_duplicates(subset=['Song Name', 'Artist Name'], inplace=True)
+
     # Drop columns not used in recommendation
     cols = ['Song Popularity', 'Song Name', 'Album Name', 'Artist Name']
     saved.drop(columns = cols, inplace = True)
@@ -193,59 +198,74 @@ def add_playlist_songs(client:spot.Spotify, recommended:pd.DataFrame, user_id:st
 def add_audio_features(client:spot.Spotify, tracks:pd.DataFrame, limit:int=50) -> pd.Series:
     """Uses's Spotify's audio_features api call to build a Series of
     tracks and their features"""
-    results = []
-    if limit > 50: # Spotify's request limit is 50
-        counter = 0
-        while limit > 0:
-            if limit//50:
-                limit -= 50
-                n = 50
-            else:
-                n, limit = limit, 0
-            start = counter * 50
-            end = start + 50
-            track_ids = tracks.loc[start:end ,"Track ID"]
+    logger = logging.getLogger("FastAPI_Backend")
+    try:
+        results = []
+        if limit > 50: # Spotify's request limit is 50
+            counter = 0
+            while limit > 0:
+                if limit//50:
+                    limit -= 50
+                    n = 50
+                else:
+                    n, limit = limit, 0
+                start = counter * 50
+                end = start + 50
+                track_ids = tracks.loc[start:end ,"Track ID"]
+                result = client.audio_features(track_ids)
+                results.append(pd.DataFrame.from_dict(result))
+                counter += 1
+        else:
+            track_ids = tracks.loc[:, "Track ID"]
             result = client.audio_features(track_ids)
             results.append(pd.DataFrame.from_dict(result))
-            counter += 1
-    else:
-        track_ids = tracks.loc[:, "Track ID"]
-        result = client.audio_features(track_ids)
-        results.append(pd.DataFrame.from_dict(result))
-    result_df = pd.concat(results, ignore_index=True)
-    df = pd.merge(tracks, result_df,
-        left_on="Track ID", right_on="id")
-    df.drop(labels=["id", "uri", "track_href",
-        "analysis_url", "type"], axis=1, inplace=True)
-    # There's a better way to merge using index that
-    # doesn't create this 0 column, but I don't remember it :)
-    if 0 in df.columns:
-        df.drop(labels=[0], axis=1, inplace=True)
-    return df
+        result_df = pd.concat(results, ignore_index=True)
+        df = pd.merge(tracks, result_df,
+            left_on="Track ID", right_on="id")
+        df.drop(labels=["id", "uri", "track_href",
+            "analysis_url", "type"], axis=1, inplace=True)
+        # There's a better way to merge using index that
+        # doesn't create this 0 column, but I don't remember it :)
+        if 0 in df.columns:
+            df.drop(labels=[0], axis=1, inplace=True)
+        return df
+    except spot.exceptions.SpotifyException:
+        logger.exception("Exception raised in add_audio_features:")
+        return pd.DataFrame()
 
 def get_user_data() -> dict:
     """Gets user's saved and recently played songs"""
     # n songs to retrieve from user's saved songs
     saved_count = 2000
+    print("getting user token")
     # Get token & Spotify client to get last 50 songs
     set_env_variables() # for running locally
     logging.info(" Requesting token")
     token = get_token()
+    print("token created")
     logging.info(" Creating Spotify client")
     spotify = spot.Spotify(auth=token)
+    print("created spotify client")
     logging.info(" Getting saved tracks")
     saved = get_saved_tracks(spotify, limit=saved_count)
+    print(f"retrieved saved tracks: {len(saved)}")
     logging.info(" Getting audio features for saved tracks")
     feature_saved = add_audio_features(spotify, saved, limit=saved_count)
+    print("retrieved saved song features")
     logging.info(" Getting recently played songs")
     last_50 = get_last_50_songs(spotify)
+    print(f"retrieved last 50 tracks: {len(last_50)}")
     logging.info(" Getting audio features for recent tracks")
     feature_50 = add_audio_features(spotify, last_50)
+    print("retrieved last 50 song features")
     # Has to be in dict format for FastAPI
-    return {
-        "feature_saved": feature_saved.to_json(),
-        "feature_50": feature_50.to_json(),
-    }
+    if len(feature_saved)==0 or len(feature_50)==0:
+        return {"error_code": 429}
+    else:
+        return {
+            "feature_saved": feature_saved.to_json(),
+            "feature_50": feature_50.to_json(),
+        }
 
 def get_recommendations(song_data:dict, method:str="cosine") -> tuple:
     """Testing flow"""
@@ -280,7 +300,14 @@ def save_playlist(recommended:pd.DataFrame):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    # logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger("FastAPI_Backend")
+    sh = logging.StreamHandler(stdout)
+    fh = logging.FileHandler(f"/logs/backend_errors_{date.today()}.log")
+    sh.setLevel(logging.INFO)
+    fh.setLevel(logging.WARNING)
+    logger.addHandler(sh)
+    logger.addHandler(fh)
     data = get_user_data()
     # get_recommendations(data)
     # data['feature_saved'].to_csv('saved.csv')
